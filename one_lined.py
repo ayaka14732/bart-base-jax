@@ -1,9 +1,13 @@
+import collections
+import itertools
 import jax
-import jax.nn as nn
-import jax.numpy as np
 import sys
 import transformers
-from transformers import BartTokenizer, FlaxBartForSequenceClassification
+
+nn = jax.nn
+np = jax.numpy
+BartTokenizer = transformers.BartTokenizer
+FlaxBartForSequenceClassification = transformers.FlaxBartForSequenceClassification
 
 transformers.logging.set_verbosity_error()
 
@@ -29,7 +33,7 @@ fwd_layer_norm = lambda params, x: ((x - x.mean(-1, keepdims=True)) / np.sqrt(x.
 
 fwd_embedding = lambda params, x: params['embedding'][x]
 
-fwd_linear = lambda params, x:np.dot(x, params['kernel']) + params['bias']
+fwd_linear = lambda params, x: np.dot(x, params['kernel']) + params['bias']
 
 flatten_last_two_dims = lambda a: (lambda d: a.reshape(-1, d[-2] * d[-1]))(a.shape)
 
@@ -41,12 +45,12 @@ fwd_transformer_decoder = lambda params, src, dst, mask_dec, mask_dec_enc: (lamb
 
 def fwd_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray) -> np.ndarray:
     src = fwd_layer_norm(params['encoder_embed_layer_norm'], fwd_embedding(params['embedding'], src) + params['encoder_embed_positions'][2:src.shape[-1]+2])
-    for encoder_layer in params['encoder_layers']:
-        src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
+
+    src = collections.deque(itertools.accumulate(params['encoder_layers'], func=lambda src, encoder_layer: fwd_transformer_encoder(encoder_layer, src, mask_enc), initial=src), maxlen=1).pop()
 
     dst = fwd_layer_norm(params['decoder_embed_layer_norm'], fwd_embedding(params['embedding'], dst) + params['decoder_embed_positions'][2:dst.shape[-1]+2])
-    for decoder_layer in params['decoder_layers']:
-        dst = fwd_transformer_decoder(decoder_layer, src, dst, mask_dec, mask_dec_enc)
+
+    dst = collections.deque(itertools.accumulate(params['decoder_layers'], func=lambda dst, decoder_layer: fwd_transformer_decoder(decoder_layer, src, dst, mask_dec, mask_dec_enc), initial=dst), maxlen=1).pop()
 
     return dst
 
@@ -60,18 +64,22 @@ src = batch.input_ids
 
 mask_enc_1d = batch.attention_mask.astype(np.bool_)
 
-i = 1
-dst = np.zeros((len(sentences), 1), dtype=np.int32)
+def next_state(state, _):
+    i, dst, a = state
 
-while True:
+    if a is not None and np.all(a == 2):
+        raise StopIteration
+
     mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
 
     a = np.argmax(nn.softmax(fwd_transformer(params, src, dst, np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None], np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None], np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]) @ lm_head)[:, -1], axis=-1)
 
-    i += 1
-    dst = np.hstack((dst, a[..., None]))
+    i, dst = i + 1, np.hstack((dst, a[..., None]))
 
-    if np.all(a == 2):
-        break
+    return i, dst, a
+
+i, dst, a = 1, np.zeros((len(sentences), 1), dtype=np.int32), None
+
+_, dst, _ = collections.deque(itertools.accumulate(itertools.repeat(None), func=next_state, initial=(i, dst, a)), maxlen=1).pop()
 
 print(tokenizer.batch_decode(dst, skip_special_tokens=True)[0])
