@@ -31,38 +31,20 @@ fwd_embedding = lambda params, x: params['embedding'][x]
 
 fwd_linear = lambda params, x:np.dot(x, params['kernel']) + params['bias']
 
-def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    _, _, d_k = params['q_proj']['kernel'].shape
+flatten_last_two_dims = lambda a: (lambda d: a.reshape(-1, d[-2] * d[-1]))(a.shape)
 
-    t = np.einsum('bhkv,bvhm->bkhm', np.where(mask, nn.softmax(np.where(mask, np.einsum('bkhm,bvhm->bhkv', fwd_linear(params['q_proj'], dst), fwd_linear(params['k_proj'], src)) / np.sqrt(d_k), np.NINF)), 0), fwd_linear(params['v_proj'], src))
+fwd_attention = lambda params, src, dst, mask: fwd_linear(params['ff'], flatten_last_two_dims(np.einsum('bhkv,bvhm->bkhm', np.where(mask, nn.softmax(np.where(mask, np.einsum('bkhm,bvhm->bhkv', fwd_linear(params['q_proj'], dst), fwd_linear(params['k_proj'], src)) / np.sqrt(params['q_proj']['kernel'].shape[-1]), np.NINF)), 0), fwd_linear(params['v_proj'], src))))
 
-    d0, d1, d2, d3 = t.shape
+fwd_transformer_encoder = lambda params, src, mask_enc: (lambda t: fwd_layer_norm(params['final_layer_norm'], fwd_linear(params['ff1'], nn.gelu(fwd_linear(params['ff0'], t))) + t))(fwd_layer_norm(params['self_attn_layer_norm'], fwd_attention(params['self_attn'], src, src, mask_enc) + src))
 
-    t = t.reshape(d0, d1, d2 * d3)
-
-    return fwd_linear(params['ff'], t)
-
-def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
-    t = fwd_layer_norm(params['self_attn_layer_norm'], fwd_attention(params['self_attn'], src, src, mask_enc) + src)
-
-    return fwd_layer_norm(params['final_layer_norm'], fwd_linear(params['ff1'], nn.gelu(fwd_linear(params['ff0'], t))) + t)
-
-def fwd_transformer_decoder(params: dict, src: np.ndarray, dst: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray) -> np.ndarray:
-    dst = fwd_layer_norm(params['self_attn_layer_norm'], fwd_attention(params['self_attn'], dst, dst, mask_dec) + dst)
-
-    t = fwd_layer_norm(params['cross_attn_layer_norm'], fwd_attention(params['cross_attn'], src, dst, mask_dec_enc) + dst)
-
-    return fwd_layer_norm(params['final_layer_norm'], fwd_linear(params['ff1'], nn.gelu(fwd_linear(params['ff0'], t))) + t)
+fwd_transformer_decoder = lambda params, src, dst, mask_dec, mask_dec_enc: (lambda dst: (lambda t: fwd_layer_norm(params['final_layer_norm'], fwd_linear(params['ff1'], nn.gelu(fwd_linear(params['ff0'], t))) + t))(fwd_layer_norm(params['cross_attn_layer_norm'], fwd_attention(params['cross_attn'], src, dst, mask_dec_enc) + dst)))(fwd_layer_norm(params['self_attn_layer_norm'], fwd_attention(params['self_attn'], dst, dst, mask_dec) + dst))
 
 def fwd_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray) -> np.ndarray:
-    _, width_enc = src.shape
-    _, width_dec = dst.shape
-
-    src = fwd_layer_norm(params['encoder_embed_layer_norm'], fwd_embedding(params['embedding'], src) + params['encoder_embed_positions'][2:width_enc+2])
+    src = fwd_layer_norm(params['encoder_embed_layer_norm'], fwd_embedding(params['embedding'], src) + params['encoder_embed_positions'][2:src.shape[-1]+2])
     for encoder_layer in params['encoder_layers']:
         src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
 
-    dst = fwd_layer_norm(params['decoder_embed_layer_norm'], fwd_embedding(params['embedding'], dst) + params['decoder_embed_positions'][2:width_dec+2])
+    dst = fwd_layer_norm(params['decoder_embed_layer_norm'], fwd_embedding(params['embedding'], dst) + params['decoder_embed_positions'][2:dst.shape[-1]+2])
     for decoder_layer in params['decoder_layers']:
         dst = fwd_transformer_decoder(decoder_layer, src, dst, mask_dec, mask_dec_enc)
 
@@ -84,18 +66,10 @@ dst = np.zeros((len(sentences), 1), dtype=np.int32)
 while True:
     mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
 
-    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-    mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
-
-    y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
-
-    a = nn.softmax(y @ lm_head)
-    a = np.argmax(a[:, -1], axis=-1)
+    a = np.argmax(nn.softmax(fwd_transformer(params, src, dst, np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None], np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None], np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]) @ lm_head)[:, -1], axis=-1)
 
     i += 1
     dst = np.hstack((dst, a[..., None]))
-    dst
 
     if np.all(a == 2):
         break
