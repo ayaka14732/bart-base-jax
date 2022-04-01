@@ -1,4 +1,4 @@
-def convert_lifrom flax.serialization import msgpack_serialize, msgpack_restore
+from flax.serialization import msgpack_serialize, msgpack_restore
 import jax
 import json
 import jax.numpy as np
