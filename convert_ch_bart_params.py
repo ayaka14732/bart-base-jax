@@ -16,6 +16,9 @@ bart = dict(model.model.named_parameters())
 init_k_list = list(bart.keys())
 
 for k in init_k_list:
+    if 'decoder' in k:
+        bart.pop(k)
+        continue
     if '.' in k:
         ks = k.split('.')
         dic_pointer = bart
@@ -24,7 +27,7 @@ for k in init_k_list:
                 dic_pointer[nk]={}
             dic_pointer = dic_pointer[nk]
         final_k = ks[-1]
-        dic_pointer[final_k] = bart[k]
+        dic_pointer[final_k] = np.asarray(bart[k].detach().numpy())
         bart.pop(k)
 
 
