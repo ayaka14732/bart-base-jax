@@ -19,7 +19,7 @@ for k in init_k_list:
     if '.' in k:
         ks = k.split('.')
         dic_pointer = bart
-        for nk in ks:
+        for nk in ks[:-1]:
             if nk not in dic_pointer:
                 dic_pointer[nk]={}
             dic_pointer = dic_pointer[nk]
