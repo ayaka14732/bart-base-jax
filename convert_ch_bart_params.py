@@ -13,7 +13,9 @@ deserialize = msgpack_restore
 model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
 bart = dict(model.model.named_parameters())
 
-for k in bart:
+init_k_list = list(bart.keys())
+
+for k in init_k_list:
     if '.' in k:
         ks = k.split('.')
         dic_pointer = bart
@@ -80,10 +82,10 @@ def convert_transformer_encoder(params):
 #     }
 
 params = {
-    'embedding': {'embedding': bart['shared.weight']},
-    'encoder_embed_positions': bart['encoder']['embed_positions']['embedding'],
+    'embedding': {'embedding': bart['shared']['weight']},
+    'encoder_embed_positions': bart['encoder']['embed_positions']['weight'],
     # 'decoder_embed_positions': bart['decoder']['embed_positions']['embedding'],
-    'encoder_embed_layer_norm': bart['encoder']['layernorm_embedding'],
+    'encoder_embed_layer_norm': convert_layer_norm(bart['encoder']['layernorm_embedding']),
     # 'decoder_embed_layer_norm': bart['decoder']['layernorm_embedding'],
     'encoder_layers': [convert_transformer_encoder(bart['encoder']['layers'][str(i)]) for i in range(6)],
     # 'decoder_layers': [convert_transformer_decoder(bart['decoder']['layers'][str(i)]) for i in range(6)],
