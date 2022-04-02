@@ -17,7 +17,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 
 n_epoch = 10
 batch_size = 112
-learning_rate = 0.01
+learning_rate = 0.005
 max_length = 512
 
 
@@ -58,7 +58,9 @@ linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32
 
 en_params = load_params()
 
-params = {**en_params,'ch':ch_params,'linear':linear_params}
+
+params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
+other_params = {**en_params,'ch':ch_params}
 
 def load_dataset(filename):
     z = onp.load(filename)
@@ -84,18 +86,25 @@ def get_attn_values(params_dict):
 
 @jax.jit
 @jax.value_and_grad
-def loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
-    outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
+def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
+    other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
+    fwd_params = {'added_linear':params['added_linear'],**other_params}
+    outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     loss = cross_entropy_loss(outputs.logits, labels) / len(labels)
     return loss
 
-
+@jax.jit
+@jax.value_and_grad
+def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
+    outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
+    loss = cross_entropy_loss(outputs.logits, labels) / len(labels)
+    return loss
 
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 
 lm_head = en_params['embedding']['embedding'].T
 
-
+#stage 1
 key = rand.PRNGKey(42)
 input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
 assert input_ids.shape[1] == attention_mask.shape[1] == decoder_input_ids.shape[1] == decoder_attention_mask.shape[1] == labels.shape[1] == max_length
@@ -103,7 +112,8 @@ n_sents = len(input_ids)
 
 # params = model.params
 optimizer = optax.lamb(learning_rate=learning_rate)
-opt_state = optimizer.init()
+opt_state = optimizer.init(params)
+
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
 for _ in tqdm_epoch:
@@ -119,7 +129,7 @@ for _ in tqdm_epoch:
         key, subkey = rand.split(key)
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
-        loss, grads = loss_fn(
+        loss, grads = stage1_loss_fn(
             params,
             src,
             dst,
@@ -140,36 +150,48 @@ for _ in tqdm_epoch:
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
 
+#stage 2
+input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
+assert input_ids.shape[1] == attention_mask.shape[1] == decoder_input_ids.shape[1] == decoder_attention_mask.shape[1] == labels.shape[1] == max_length
+n_sents = len(input_ids)
 
-# tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+params = {'added_linear':params['added_linear'],**other_params}
 
-# sentences = ['Can you see the beautiful flowers <mask> alongside the track?']
+optimizer = optax.lamb(learning_rate=0.001)
+opt_state = optimizer.init(params)
 
-# batch = ch_tokenizer(sentences, return_tensors='jax')
-#
-# src = batch.input_ids
-# mask_enc_1d = batch.attention_mask.astype(np.bool_)
-#
-# i = 1
-# dst = np.zeros((len(sentences), 1), dtype=np.int32)
-#
-# while True:
-#     mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
-#
-#     mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-#     mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-#     mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
-#
-#     y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
-#
-#     a = nn.softmax(y @ lm_head)
-#     a = np.argmax(a[:, -1], axis=-1)
-#
-#     i += 1
-#     dst = np.hstack((dst, a[..., None]))
-#     dst
-#
-#     if np.all(a == 2):
-#         break
-#
-# print(tokenizer.batch_decode(dst, skip_special_tokens=True))
+
+tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
+for _ in tqdm_epoch:
+    epoch_loss = 0.
+
+    n_batches = n_sents // batch_size
+    key, subkey = rand.split(key)
+    shuffled_indices = rand.permutation(subkey, n_sents)
+
+    tqdm_batch = trange(n_batches, desc='Batch', leave=False)
+
+    for i in tqdm_batch:
+        key, subkey = rand.split(key)
+        batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
+
+        loss, grads = stage1_loss_fn(
+            params,
+            src,
+            dst,
+            mask_enc,
+            mask_dec,
+            mask_dec_enc,
+            labels[batch,],
+        )
+        # .reshape(8, batch_size // 8, max_length)
+
+        updates, opt_state = optimizer.update(grads, opt_state, params)
+        params = optax.apply_updates(params, updates)
+
+        batch_loss = loss.item()
+        epoch_loss += batch_loss
+
+    epoch_loss /= n_batches
+    tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
+
