@@ -2,13 +2,12 @@ import jax
 import jax.nn as nn
 import jax.numpy as np
 import jax.random as rand
-import torch
 import math
-from transformers import BartTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
-
-from lib.fwd_transformer import fwd_transformer
-
-
+import numpy as onp
+from transformers import BertTokenizer, BartTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
+from tqdm import trange
+import optax
+from lib.fwd_nmt_transformer import fwd_nmt_transformer
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -16,6 +15,18 @@ from lib.fwd_transformer import fwd_transformer
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
+n_epoch = 10
+batch_size = 112
+learning_rate = 0.01
+max_length = 512
+
+
+def cross_entropy_loss(logits, labels):
+    exp_logits = np.exp(logits)
+    softmax_probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
+    exp_loss = np.take_along_axis(softmax_probs, labels[..., None], axis=-1)
+    loss = -np.log(exp_loss)
+    return np.sum(loss)
 
 def load_params():
     from flax.serialization import msgpack_restore
@@ -25,22 +36,58 @@ def load_params():
     params = jax.tree_map(np.asarray, params)  # NumPy array to JAX array
     return params
 
+def load_ch_params():
+    from flax.serialization import msgpack_restore
+    with open('bart_ch_params.dat', 'rb') as f:
+        b = f.read()
+    ch_params = msgpack_restore(b)
+    ch_params = jax.tree_map(np.asarray, ch_params)  # NumPy array to JAX array
+    return ch_params
 
 
-# 1.
+
+# 1. load params
 ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
-model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
-ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
-model = BartForConditionalGeneration.from_pretrained('')
+# model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
+# ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
+ch_params = load_ch_params()
 
 w_initializer = jax.nn.initializers.orthogonal()
 b_initializer = jax.nn.initializers.uniform(1/math.sqrt(768))
-linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768), jnp.float32)}
+linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768), np.float32)}
 
 en_params = load_params()
 
+params = {**en_params,'ch':ch_params,'linear':linear_params}
 
+def load_dataset(filename):
+    z = onp.load(filename)
 
+    input_ids = z['input_ids']
+    attention_mask = z['attention_mask']
+    decoder_input_ids = z['decoder_input_ids']
+    decoder_attention_mask = z['decoder_attention_mask']
+    n_sents = len(input_ids)
+    labels = onp.hstack((decoder_input_ids[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
+
+    return input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels
+
+def get_attn_values(params_dict):
+    ret = []
+    for k in params_dict:
+        if k=='ff':
+            continue
+        if isinstance(params_dict[k],np.ndarray):
+            ret.append(params_dict[k])
+        else:
+            ret.extend(get_attn_values(params_dict[k]))
+
+@jax.jit
+@jax.value_and_grad
+def loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
+    outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
+    loss = cross_entropy_loss(outputs.logits, labels) / len(labels)
+    return loss
 
 
 
@@ -48,34 +95,81 @@ en_params = load_params()
 
 lm_head = en_params['embedding']['embedding'].T
 
-tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-sentences = ['Can you see the beautiful flowers <mask> alongside the track?']
-batch = tokenizer(sentences, return_tensors='jax')
+key = rand.PRNGKey(42)
+input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
+assert input_ids.shape[1] == attention_mask.shape[1] == decoder_input_ids.shape[1] == decoder_attention_mask.shape[1] == labels.shape[1] == max_length
+n_sents = len(input_ids)
 
-src = batch.input_ids
-mask_enc_1d = batch.attention_mask.astype(np.bool_)
+# params = model.params
+optimizer = optax.lamb(learning_rate=learning_rate)
+opt_state = optimizer.init()
 
-i = 1
-dst = np.zeros((len(sentences), 1), dtype=np.int32)
+tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
+for _ in tqdm_epoch:
+    epoch_loss = 0.
 
-while True:
-    mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
+    n_batches = n_sents // batch_size
+    key, subkey = rand.split(key)
+    shuffled_indices = rand.permutation(subkey, n_sents)
 
-    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-    mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+    tqdm_batch = trange(n_batches, desc='Batch', leave=False)
 
-    y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    for i in tqdm_batch:
+        key, subkey = rand.split(key)
+        batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
-    a = nn.softmax(y @ lm_head)
-    a = np.argmax(a[:, -1], axis=-1)
+        loss, grads = loss_fn(
+            params,
+            src,
+            dst,
+            mask_enc,
+            mask_dec,
+            mask_dec_enc,
+            labels[batch,],
+        )
+        # .reshape(8, batch_size // 8, max_length)
 
-    i += 1
-    dst = np.hstack((dst, a[..., None]))
-    dst
+        updates, opt_state = optimizer.update(grads, opt_state, params)
+        params = optax.apply_updates(params, updates)
 
-    if np.all(a == 2):
-        break
+        batch_loss = loss.item()
+        epoch_loss += batch_loss
 
-print(tokenizer.batch_decode(dst, skip_special_tokens=True))
+    epoch_loss /= n_batches
+    tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
+
+
+
+# tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+
+# sentences = ['Can you see the beautiful flowers <mask> alongside the track?']
+
+# batch = ch_tokenizer(sentences, return_tensors='jax')
+#
+# src = batch.input_ids
+# mask_enc_1d = batch.attention_mask.astype(np.bool_)
+#
+# i = 1
+# dst = np.zeros((len(sentences), 1), dtype=np.int32)
+#
+# while True:
+#     mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
+#
+#     mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+#     mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
+#     mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+#
+#     y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+#
+#     a = nn.softmax(y @ lm_head)
+#     a = np.argmax(a[:, -1], axis=-1)
+#
+#     i += 1
+#     dst = np.hstack((dst, a[..., None]))
+#     dst
+#
+#     if np.all(a == 2):
+#         break
+#
+# print(tokenizer.batch_decode(dst, skip_special_tokens=True))

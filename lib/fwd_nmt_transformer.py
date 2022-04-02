@@ -9,8 +9,11 @@ from .fwd_embedding import fwd_embedding
 from .fwd_transformer_encoder import fwd_transformer_encoder
 from .fwd_transformer_decoder import fwd_transformer_decoder
 
-def fwd_transformer(params: dict, params_ch: dict, linear_params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
+def fwd_nmt_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
     # params
+
+    params_ch = params['ch']
+    linear_params = params['added_linear']
 
     ch_embedding: dict = params_ch['embedding']  # embedding
     ch_encoder_embed_positions: np.ndarray = params_ch['encoder_embed_positions']  # array

@@ -45,7 +45,6 @@ while True:
 
     i += 1
     dst = np.hstack((dst, a[..., None]))
-    dst
 
     if np.all(a == 2):
         break
