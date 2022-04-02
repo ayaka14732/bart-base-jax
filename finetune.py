@@ -16,7 +16,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 10
+n_epoch = 2
 batch_size = 112
 learning_rate = 0.005
 max_length = 512
@@ -140,6 +140,26 @@ def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_de
     params = optax.apply_updates(params, updates)
     return params, loss, opt_state
 
+@functools.partial(jax.pmap, axis_name='num_devices')
+def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, optimizer, opt_state):
+    loss, grads = stage2_loss_fn(
+        params,
+        src,
+        dst,
+        mask_enc,
+        mask_dec,
+        mask_dec_enc,
+        labels,
+    )
+    # .reshape(8, batch_size // 8, max_length)
+
+    grads = jax.lax.pmean(grads, axis_name='num_devices')
+    loss = jax.lax.pmean(loss, axis_name='num_devices')
+
+    updates, opt_state = optimizer.update(grads, opt_state, params)
+    params = optax.apply_updates(params, updates)
+    return params, loss, opt_state
+
 def split(arr):
   """Splits the first axis of `arr` evenly across the number of devices."""
   return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
@@ -187,6 +207,15 @@ for _ in tqdm_epoch:
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
+
+#save stage 1 checkpoint
+params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
+other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
+params = {'added_linear':params['added_linear'],**other_params}
+from flax.serialization import msgpack_serialize
+serialized_params = msgpack_serialize(params)
+with open('bart_stage1_ckpt.dat', 'wb') as f:
+    f.write(serialized_params)
 
 #stage 2
 # input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
