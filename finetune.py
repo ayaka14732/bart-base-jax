@@ -123,7 +123,7 @@ def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, optimizer, opt_state):
+def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     loss, grads = stage1_loss_fn(
         params,
         other_params,
@@ -139,12 +139,10 @@ def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_de
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
 
-    updates, opt_state = optimizer.update(grads, opt_state, params)
-    params = optax.apply_updates(params, updates)
-    return params, loss, opt_state
+    return grads, loss
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, optimizer, opt_state):
+def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     loss, grads = stage2_loss_fn(
         params,
         src,
@@ -159,9 +157,7 @@ def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
 
-    updates, opt_state = optimizer.update(grads, opt_state, params)
-    params = optax.apply_updates(params, updates)
-    return params, loss, opt_state
+    return grads, loss
 
 def split(arr):
   """Splits the first axis of `arr` evenly across the number of devices."""
@@ -215,7 +211,10 @@ for _ in tqdm_epoch:
         mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
         mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
 
-        replicated_params, loss, opt_state = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, optimizer, opt_state)
+        grads, loss = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
+        updates, opt_state = optimizer.update(grads, opt_state, params)
+        params = optax.apply_updates(params, updates)
+        replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 
         batch_loss = loss.item()
         epoch_loss += batch_loss
