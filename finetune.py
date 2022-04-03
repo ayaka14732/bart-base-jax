@@ -9,6 +9,7 @@ from tqdm import trange
 import optax
 import functools
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
+from dataloader import process_one_dataset
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -49,6 +50,7 @@ def load_ch_params():
 
 # 1. load params
 ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
+en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 # model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
 # ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
 ch_params = load_ch_params()
@@ -77,18 +79,18 @@ replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), othe
 #     # labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
 #
 #     return input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels
-
-def load_dataset(filename):
-    z = onp.load(filename)
-
-    src = z['input_ids']
-    src_mask = z['attention_mask']
-    dst = z['decoder_input_ids']
-    dst_mask = z['decoder_attention_mask']
-    # n_sents = len(input_ids)
-    labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
-
-    return src, src_mask, dst, dst_mask, labels
+#
+# def load_dataset(filename):
+#     z = onp.load(filename)
+#
+#     src = z['input_ids']
+#     src_mask = z['attention_mask']
+#     dst = z['decoder_input_ids']
+#     dst_mask = z['decoder_attention_mask']
+#     # n_sents = len(input_ids)
+#     labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
+#
+#     return src, src_mask, dst, dst_mask, labels
 
 
 def get_attn_values(params_dict):
@@ -169,7 +171,13 @@ lm_head = en_params['embedding']['embedding'].T
 
 #stage 1
 key = rand.PRNGKey(42)
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
+
+
+# input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
+input_ids, mask_enc_1d = process_one_dataset('wikimatrix21zh.txt','zh')
+decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21en.txt', 'en')
+# labels = onp.hstack((decoder_input_ids[:,1:], np.ones((len(input_ids), 1), dtype=np.int32) * en_tokenizer.pad_token_id))
+
 n_sents = len(input_ids)
 
 
@@ -194,6 +202,7 @@ for _ in tqdm_epoch:
 
         src = split(input_ids[batch])
         dst = split(decoder_input_ids[batch])
+        labels = split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
         mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
         mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
