@@ -107,7 +107,7 @@ def get_attn_values(params_dict):
 @jax.value_and_grad
 def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    fwd_params = {'added_linear':params['added_linear'],**other_params}
+    fwd_params = {'added_linear':params['added_linear'],'ch':params['ch'],**other_params}
     outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     lm_head = other_params['embedding']['embedding'].T
     logits = outputs @ lm_head
