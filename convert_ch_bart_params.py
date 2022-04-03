@@ -33,19 +33,19 @@ for k in init_k_list:
 
 def convert_qkv(params):
     return {
-        'kernel': params['weight'].reshape(768, 12, 64).transpose(1, 0, 2),
+        'kernel': params['weight'].T.reshape(768, 12, 64).transpose(1, 0, 2),
         'bias': params['bias'].reshape(12, 64),
     }
 
 def convert_linear(params):
     return{
-        'kernel': params['weight'],
+        'kernel': params['weight'].T,
         'bias': params['bias']
     }
 
 def convert_layer_norm(params):
     return {
-        'scale': params['weight'],
+        'scale': params['weight'].T,
         'bias': params['bias']
     }
 
@@ -85,8 +85,8 @@ def convert_transformer_encoder(params):
 #     }
 
 params = {
-    'embedding': {'embedding': bart['shared']['weight']},
-    'encoder_embed_positions': bart['encoder']['embed_positions']['weight'],
+    'embedding': {'embedding': bart['shared']['weight'].T},
+    'encoder_embed_positions': bart['encoder']['embed_positions']['weight'].T,
     # 'decoder_embed_positions': bart['decoder']['embed_positions']['embedding'],
     'encoder_embed_layer_norm': convert_layer_norm(bart['encoder']['layernorm_embedding']),
     # 'decoder_embed_layer_norm': bart['decoder']['layernorm_embedding'],
