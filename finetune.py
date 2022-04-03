@@ -174,8 +174,8 @@ key = rand.PRNGKey(42)
 
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
-input_ids, mask_enc_1d = process_one_dataset('wikimatrix21zh.txt','zh')
-decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21en.txt', 'en')
+input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
+decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 # labels = onp.hstack((decoder_input_ids[:,1:], np.ones((len(input_ids), 1), dtype=np.int32) * en_tokenizer.pad_token_id))
 
 n_sents = len(input_ids)

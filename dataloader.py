@@ -39,10 +39,10 @@ def encode_one_batch_en(sents):
 def process_one_dataset(dataset_filename, language):
     if language == 'en':
         encode_one_batch = encode_one_batch_ch
-        max_length = 256
+        max_length = 512
     elif language == 'zh':
         encode_one_batch = encode_one_batch_en
-        max_length = 512
+        max_length = 1024
     else:
         print('unsupported language specification ' + language)
         exit(0)
@@ -52,8 +52,8 @@ def process_one_dataset(dataset_filename, language):
         wikimatrix21zh = []
         for i,line in enumerate(f):
             line = line.rstrip('\n')
-            if len(line) <= max_length - 2:  # skip long sentences
-                wikimatrix21zh.append(line)
+            # if len(line) <= max_length - 2:  # skip long sentences
+            #     wikimatrix21zh.append(line)
 
     with Pool() as p:
         xs = list(tqdm(p.imap(encode_one_batch,chunks(wikimatrix21zh, chunksize)), total=math.ceil(len(wikimatrix21zh) / chunksize)))
