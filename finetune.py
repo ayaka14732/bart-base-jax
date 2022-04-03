@@ -62,7 +62,6 @@ linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32
 
 en_params = load_params()
 
-
 params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
 other_params = {**en_params,'ch':ch_params}
 
@@ -110,14 +109,20 @@ def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc,
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
     fwd_params = {'added_linear':params['added_linear'],**other_params}
     outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
-    loss = cross_entropy_loss(outputs.logits, labels) / len(labels)
+    lm_head = params['embedding']['embedding'].T
+    logits = outputs @ lm_head
+    logits = nn.softmax(logits)
+    loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
 @jax.jit
 @jax.value_and_grad
 def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
-    loss = cross_entropy_loss(outputs.logits, labels) / len(labels)
+    lm_head = params['embedding']['embedding'].T
+    logits = outputs @ lm_head
+    logits = nn.softmax(logits)
+    loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
