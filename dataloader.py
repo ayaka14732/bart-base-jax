@@ -15,23 +15,38 @@ np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
 chunksize = 1000
 
+ch_tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
+
+en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+
+def encode_one_batch_ch(sents):
+    assert isinstance(sents, list)
+    assert len(sents) > 1
+    y = ch_tokenizer(sents, return_tensors='np', max_length=256, padding='max_length')
+    data = y.input_ids
+    mask = y.attention_mask
+    return data, mask
+
+def encode_one_batch_en(sents):
+    assert isinstance(sents, list)
+    assert len(sents) > 1
+    y = en_tokenizer(sents, return_tensors='np', max_length=512, padding='max_length')
+    data = y.input_ids
+    mask = y.attention_mask
+    return data, mask
+
+
 def process_one_dataset(dataset_filename, language):
     if language == 'en':
-        tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
+        encode_one_batch = encode_one_batch_ch
         max_length = 256
     elif language == 'ch':
-        ch_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+        encode_one_batch = encode_one_batch_en
         max_length = 512
     else:
         print('unsupported language specification ' + language)
+        exit(0)
 
-    def encode_one_batch(sents):
-        assert isinstance(sents, list)
-        assert len(sents) > 1
-        y = tokenizer(sents, return_tensors='np', max_length=max_length, padding='max_length')
-        data = y.input_ids
-        mask = y.attention_mask
-        return data, mask
 
     with open(join(expanduser(f'~/dataset/processed'), dataset_filename), encoding='utf-8') as f:
         wikimatrix21zh = []
