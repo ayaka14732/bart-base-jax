@@ -56,11 +56,27 @@ en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 # ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
 ch_params = load_ch_params()
 
-w_initializer = jax.nn.initializers.orthogonal()
-b_initializer = jax.nn.initializers.uniform(1/math.sqrt(768))
-linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768,), np.float32)}
+
+from flax.serialization import msgpack_restore
+with open('bart_stage1_ckpt.dat', 'rb') as f:
+    b = f.read()
+pretrained_params = msgpack_restore(b)
+pretrained_params = jax.tree_map(np.asarray, pretrained_params)
+
+# w_initializer = jax.nn.initializers.orthogonal()
+# b_initializer = jax.nn.initializers.uniform(1/math.sqrt(768))
+# linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768,), np.float32)}
+linear_params = pretrained_params['added_linear']
+
 
 en_params = load_params()
+
+
+
+en_params['encoder_layers'][0]['self_attn'] = pretrained_params['first_attn']
+
+
+
 
 params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
 other_params = {**en_params,'ch':ch_params}
@@ -222,7 +238,7 @@ for _ in tqdm_epoch:
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
-        if i%10==0:
+        if i%4==0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
@@ -230,14 +246,14 @@ for _ in tqdm_epoch:
 
 
 #save stage 1 checkpoint
-params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
-other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
-other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear':params['added_linear'],**other_params}
-from flax.serialization import msgpack_serialize
-serialized_params = msgpack_serialize(params)
-with open('bart_stage1_ckpt.dat', 'wb') as f:
-    f.write(serialized_params)
+# params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
+# other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
+# other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
+# params = {'added_linear':params['added_linear'],**other_params}
+# from flax.serialization import msgpack_serialize
+# serialized_params = msgpack_serialize(params)
+# with open('bart_stage1_ckpt.dat', 'wb') as f:
+#     f.write(serialized_params)
 
 #stage 2
 # input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
