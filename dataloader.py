@@ -77,7 +77,7 @@ def process_one_dataset(dataset_ch, dataset_en):
 
 #ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
 
-data_arr_en, mask_arr_en, data_arr_ch, mask_arr_ch = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+# input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
 #np.savez("wikimatrix21zh.npz", ch_data = data_arr_ch, ch_mask = data_arr_ch)
 # print("Done1")
 # del data_arr_en, mask_arr_en, data_arr_ch, mask_arr_ch
