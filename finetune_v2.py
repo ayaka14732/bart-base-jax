@@ -150,7 +150,6 @@ def stage_1_batch_update(params, other_params, src, dst, mask_enc, mask_dec, mas
 
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
-    loss = jax.device_get(jax.tree_map(lambda x: x[0], loss))
     updates, opt_state = opt_update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
