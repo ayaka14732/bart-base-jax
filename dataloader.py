@@ -49,14 +49,14 @@ def process_one_dataset(dataset_filename, language):
 
 
     with open(join(expanduser(f'~/dataset/processed'), dataset_filename), encoding='utf-8') as f:
-        wikimatrix21zh = []
+        raw = []
         for i,line in enumerate(f):
             line = line.rstrip('\n')
             # if len(line) <= max_length - 2:  # skip long sentences
-            #     wikimatrix21zh.append(line)
+            raw.append(line)
 
     with Pool() as p:
-        xs = list(tqdm(p.imap(encode_one_batch,chunks(wikimatrix21zh, chunksize)), total=math.ceil(len(wikimatrix21zh) / chunksize)))
+        xs = list(tqdm(p.imap(encode_one_batch,chunks(raw, chunksize)), total=math.ceil(len(raw) / chunksize)))
 
     data_list = []
     mask_list = []
