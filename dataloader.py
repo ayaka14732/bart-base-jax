@@ -35,7 +35,8 @@ def process_one_dataset(dataset_filename, language):
 
     with open(join(expanduser(f'~/dataset/processed'), dataset_filename), encoding='utf-8') as f:
         wikimatrix21zh = []
-        for line in f:
+        for i,line in enumerate(f):
+            if i>=1000: break
             line = line.rstrip('\n')
             if len(line) <= max_length - 2:  # skip long sentences
                 wikimatrix21zh.append(line)
