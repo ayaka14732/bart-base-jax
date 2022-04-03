@@ -20,7 +20,7 @@ import copy
 
 n_epoch = 5
 batch_size = 96
-learning_rate = 0.01
+learning_rate = 0.05
 max_length = 512
 n_devices = jax.local_device_count()
 
