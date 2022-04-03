@@ -73,7 +73,7 @@ en_params = load_params()
 
 
 
-en_params['encoder_layers'][0]['self_attn'] = pretrained_params['first_attn']
+en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
 
 
