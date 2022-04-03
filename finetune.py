@@ -19,7 +19,7 @@ import copy
 #4. fine-tune all params with decayed lr
 
 n_epoch = 5
-batch_size = 96
+batch_size = 80
 learning_rate = 0.05
 max_length = 512
 n_devices = jax.local_device_count()
