@@ -218,7 +218,7 @@ for _ in tqdm_epoch:
         params = optax.apply_updates(params, updates)
         replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 
-        batch_loss = loss.item()
+        batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
 
     epoch_loss /= n_batches
