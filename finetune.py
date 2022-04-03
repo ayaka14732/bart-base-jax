@@ -199,7 +199,7 @@ n_sents = len(input_ids)
 
 
 # params = model.params
-optimizer = optax.adam(learning_rate=learning_rate, weight_decay = 5e-4)
+optimizer = optax.adamw(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
