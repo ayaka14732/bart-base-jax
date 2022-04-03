@@ -234,7 +234,7 @@ for _ in tqdm_epoch:
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
 other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear':params['added_linear'],**other_params}
+params = {'added_linear':params['added_linear'],'ch':params['ch'],**other_params}
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
 with open('bart_stage1_ckpt.dat', 'wb') as f:
