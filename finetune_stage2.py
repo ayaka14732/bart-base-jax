@@ -20,7 +20,7 @@ import copy
 
 n_epoch = 3
 batch_size = 40
-learning_rate = 0.01
+learning_rate = 0.001
 max_length = 512
 n_devices = jax.local_device_count()
 
@@ -150,7 +150,7 @@ n_sents = len(input_ids)
 
 
 # params = model.params
-optimizer = optax.lamb(learning_rate=learning_rate)
+optimizer = optax.adam(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
