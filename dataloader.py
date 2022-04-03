@@ -39,10 +39,10 @@ def encode_one_batch_en(sents):
 def process_one_dataset(dataset_filename, language):
     if language == 'en':
         encode_one_batch = encode_one_batch_ch
-        max_length = 512
+        max_length = 256
     elif language == 'zh':
         encode_one_batch = encode_one_batch_en
-        max_length = 1024
+        max_length = 512
     else:
         print('unsupported language specification ' + language)
         exit(0)
