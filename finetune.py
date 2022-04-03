@@ -18,7 +18,7 @@ import copy
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 2
+n_epoch = 5
 batch_size = 96
 learning_rate = 0.005
 max_length = 512
