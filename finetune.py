@@ -62,8 +62,8 @@ linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32
 
 en_params = load_params()
 
-params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = {**en_params,'ch':ch_params}
+params = {'ch':ch_params,'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
+other_params = en_params
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
@@ -233,6 +233,7 @@ for _ in tqdm_epoch:
 #save stage 1 checkpoint
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
+other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
 params = {'added_linear':params['added_linear'],**other_params}
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
