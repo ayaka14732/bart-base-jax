@@ -135,8 +135,7 @@ def stage2_loss_fn(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_1_batch_update(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, opt_state,
-                         opt_update):
+def stage_1_batch_update(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, opt_state):
     loss, grads = stage1_loss_fn(
         params,
         other_params,
@@ -159,7 +158,7 @@ def stage_1_batch_update(params, other_params, src, dst, mask_enc, mask_dec, mas
 
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_2_batch_update(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, opt_state, opt_update):
+def stage_2_batch_update(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, opt_state):
     loss, grads = stage2_loss_fn(
         params,
         src,
@@ -229,7 +228,7 @@ for _ in tqdm_epoch:
         mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
 
         replicated_params, loss = stage_1_batch_update(replicated_params, replicated_other_params, src, dst, mask_enc,
-                                                       mask_dec, mask_dec_enc, labels, opt_state, opt_update)
+                                                       mask_dec, mask_dec_enc, labels, opt_state)
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
