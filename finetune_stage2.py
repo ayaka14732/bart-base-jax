@@ -19,7 +19,7 @@ import copy
 #4. fine-tune all params with decayed lr
 
 n_epoch = 3
-batch_size = 64
+batch_size = 40
 learning_rate = 0.01
 max_length = 512
 n_devices = jax.local_device_count()
@@ -184,7 +184,7 @@ for _ in tqdm_epoch:
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
-        if i%10==0:
+        if i%4==0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
