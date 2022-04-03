@@ -57,7 +57,7 @@ ch_params = load_ch_params()
 
 w_initializer = jax.nn.initializers.orthogonal()
 b_initializer = jax.nn.initializers.uniform(1/math.sqrt(768))
-linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768), np.float32)}
+linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768,), np.float32)}
 
 en_params = load_params()
 
