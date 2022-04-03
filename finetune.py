@@ -10,6 +10,7 @@ import optax
 import functools
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
 from dataloader import process_one_dataset
+import copy
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -189,6 +190,8 @@ n_sents = len(input_ids)
 optimizer = optax.lamb(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
+optimizer = [copy.copy(optimizer)]*8
+opt_state = [copy.copy(opt_state)]*8
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
 for _ in tqdm_epoch:
