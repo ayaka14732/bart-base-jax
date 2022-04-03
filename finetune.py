@@ -109,7 +109,7 @@ def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc,
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
     fwd_params = {'added_linear':params['added_linear'],**other_params}
     outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
-    lm_head = params['embedding']['embedding'].T
+    lm_head = other_params['embedding']['embedding'].T
     logits = outputs @ lm_head
     logits = nn.softmax(logits)
     loss = cross_entropy_loss(logits, labels) / len(labels)
