@@ -18,8 +18,8 @@ import copy
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 5
-batch_size = 64
+n_epoch = 3
+batch_size = 96
 learning_rate = 0.05
 max_length = 512
 n_devices = jax.local_device_count()
@@ -62,8 +62,8 @@ linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32
 
 en_params = load_params()
 
-params = {'ch':ch_params,'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = en_params
+params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
+other_params = {**en_params,'ch':ch_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
@@ -107,7 +107,7 @@ def get_attn_values(params_dict):
 @jax.value_and_grad
 def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    fwd_params = {'added_linear':params['added_linear'],'ch':params['ch'],**other_params}
+    fwd_params = {'added_linear':params['added_linear'],**other_params}
     outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     lm_head = other_params['embedding']['embedding'].T
     logits = outputs @ lm_head
@@ -223,8 +223,7 @@ for _ in tqdm_epoch:
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
 
-        if i%10==0:
-            tqdm_epoch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
+        tqdm_epoch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
@@ -234,7 +233,7 @@ for _ in tqdm_epoch:
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
 other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear':params['added_linear'],'ch':params['ch'],**other_params}
+params = {'added_linear':params['added_linear'],**other_params}
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
 with open('bart_stage1_ckpt.dat', 'wb') as f:
