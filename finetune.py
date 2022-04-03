@@ -214,6 +214,8 @@ for _ in tqdm_epoch:
         mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
 
         grads, loss = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
+
+        grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
         updates, opt_state = optimizer.update(grads, opt_state, params)
         params = optax.apply_updates(params, updates)
         replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
