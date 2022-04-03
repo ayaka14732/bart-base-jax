@@ -22,7 +22,7 @@ chunksize = 1000
 def encode_en_batch(sents):
     #assert isinstance(sents, list)
     #assert len(sents) > 1
-    y = en_tokenizer(sents, return_tensors='np', max_length=max_length_en, padding='max_length')
+    y = en_tokenizer(sents, return_tensors='np', max_length=max_length_en, padding='max_length', truncation=True)
     data = y.input_ids
     mask = y.attention_mask
     return data, mask
@@ -30,7 +30,7 @@ def encode_en_batch(sents):
 def encode_ch_batch(sents):
     #assert isinstance(sents, list)
     #assert len(sents) > 1
-    y = ch_tokenizer(sents, return_tensors='np', max_length=max_length_ch, padding='max_length')
+    y = ch_tokenizer(sents, return_tensors='np', max_length=max_length_ch, padding='max_length',truncation=True)
     data = y.input_ids
     mask = y.attention_mask
     return data, mask
