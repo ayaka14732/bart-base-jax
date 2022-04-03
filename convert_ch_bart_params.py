@@ -45,7 +45,7 @@ def convert_linear(params):
 
 def convert_layer_norm(params):
     return {
-        'scale': params['weight'].T,
+        'scale': params['weight'],
         'bias': params['bias']
     }
 
@@ -85,8 +85,8 @@ def convert_transformer_encoder(params):
 #     }
 
 params = {
-    'embedding': {'embedding': bart['shared']['weight'].T},
-    'encoder_embed_positions': bart['encoder']['embed_positions']['weight'].T,
+    'embedding': {'embedding': bart['shared']['weight']},
+    'encoder_embed_positions': bart['encoder']['embed_positions']['weight'],
     # 'decoder_embed_positions': bart['decoder']['embed_positions']['embedding'],
     'encoder_embed_layer_norm': convert_layer_norm(bart['encoder']['layernorm_embedding']),
     # 'decoder_embed_layer_norm': bart['decoder']['layernorm_embedding'],
