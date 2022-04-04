@@ -211,9 +211,12 @@ for _ in tqdm_epoch:
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
 other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear': params['added_linear'], **other_params}
+other_params['ch']['encoder_layers'][3] = params['train_encoder_layers'][0]
+other_params['ch']['encoder_layers'][4] = params['train_encoder_layers'][1]
+other_params['ch']['encoder_layers'][5] = params['train_encoder_layers'][2]
+
 from flax.serialization import msgpack_serialize
 
-serialized_params = msgpack_serialize(params)
+serialized_params = msgpack_serialize(other_params)
 with open('bart_stage1_3_random_layer.dat', 'wb') as f:
     f.write(serialized_params)

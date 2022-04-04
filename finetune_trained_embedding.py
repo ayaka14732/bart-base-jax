@@ -40,7 +40,7 @@ def load_params():
 
 def load_ch_params():
     from flax.serialization import msgpack_restore
-    with open('bart_ch_params.dat', 'rb') as f:
+    with open('ch_trained_emb.dat', 'rb') as f:
         b = f.read()
     ch_params = msgpack_restore(b)
     ch_params = jax.tree_map(np.asarray, ch_params)  # NumPy array to JAX array
@@ -55,22 +55,12 @@ en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 # ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
 ch_params = load_ch_params()
 
-
-
-
-from flax.serialization import msgpack_restore
-with open('bart_stage1_ckpt.dat', 'rb') as f:
-    b = f.read()
-pretrained_params = msgpack_restore(b)
-pretrained_params = jax.tree_map(np.asarray, pretrained_params)
-
-
 en_params = load_params()
 
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
 params = {'ch':ch_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = en_params
+other_params = {,**en_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
