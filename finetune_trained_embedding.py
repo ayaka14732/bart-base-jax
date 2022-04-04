@@ -59,7 +59,7 @@ en_params = load_params()
 
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
-ch_params['encoder_layers'] = ch_params['encoder_layers'][0]
+ch_params['encoder_layers'] = [ch_params['encoder_layers'][0]]
 
 params = {'ch_encoder_layers':ch_params['encoder_layers'], 'first_attn':en_params['encoder_layers'][0]['self_attn']}
 other_params = {'ch':ch_params,**en_params}
