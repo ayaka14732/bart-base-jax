@@ -19,7 +19,7 @@ from dataloader import process_one_dataset
 
 n_epoch = 6
 batch_size = 64
-learning_rate = 0.01
+learning_rate = 0.001
 max_length = 512
 n_devices = jax.local_device_count()
 
