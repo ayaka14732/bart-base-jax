@@ -192,7 +192,6 @@ input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wi
 # input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
 # decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 
-@functools.partial(jax.pmap, axis_name='num_devices')
 def eval(replicated_params, replicated_other_params):
     eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh','dev/newsdev2017.en')
     n_batches = len(eval_input_ids)//batch_size
@@ -204,7 +203,7 @@ def eval(replicated_params, replicated_other_params):
         labels = split(onp.hstack(
             (dst[:, 1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size], mask_dec_1d[i * batch_size:(i + 1) * batch_size])
-        loss = stage1_eval_loss(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
+        loss = stage_1_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
                                            mask_dec_enc, labels)
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
