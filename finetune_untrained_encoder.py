@@ -40,7 +40,7 @@ def load_params():
 
 def load_ch_params():
     from flax.serialization import msgpack_restore
-    with open('bart_ch_params.dat', 'rb') as f:
+    with open('ch_untrained.dat', 'rb') as f:
         b = f.read()
     ch_params = msgpack_restore(b)
     ch_params = jax.tree_map(np.asarray, ch_params)  # NumPy array to JAX array
@@ -213,8 +213,8 @@ for _ in tqdm_epoch:
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
 other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear':params['added_linear'],**other_params}
+params = {'ch':ch_params,**other_params}
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
-with open('bart_stage1_randomenc_ckpt.dat', 'wb') as f:
+with open('bart_stage1_fully_random_ckpt.dat', 'wb') as f:
     f.write(serialized_params)

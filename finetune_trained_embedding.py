@@ -18,7 +18,7 @@ from dataloader import process_one_dataset
 #4. fine-tune all params with decayed lr
 
 n_epoch = 3
-batch_size = 64
+batch_size = 56
 learning_rate = 0.01
 max_length = 512
 n_devices = jax.local_device_count()
@@ -59,8 +59,8 @@ en_params = load_params()
 
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
-params = {'ch':ch_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = {,**en_params}
+params = {'ch_encoder_layers':ch_params['encoder_layers'], 'first_attn':en_params['encoder_layers'][0]['self_attn']}
+other_params = {'ch':ch_params,**en_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
@@ -104,8 +104,8 @@ def get_attn_values(params_dict):
 @jax.value_and_grad
 def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    fwd_params = {'ch':params['ch'],**other_params}
-    outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
+    other_params['ch']['encoder_layers']=params['ch_encoder_layers']
+    outputs = fwd_nmt_transformer(other_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     lm_head = other_params['embedding']['embedding'].T
     logits = outputs @ lm_head
     logits = nn.softmax(logits)
@@ -203,8 +203,8 @@ for _ in tqdm_epoch:
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
 other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-params = {'added_linear':params['added_linear'],**other_params}
+other_params['ch']['encoder_layers']=params['ch_encoder_layers']
 from flax.serialization import msgpack_serialize
-serialized_params = msgpack_serialize(params)
-with open('bart_stage1_randomenc_ckpt.dat', 'wb') as f:
+serialized_params = msgpack_serialize(other_params)
+with open('bart_stage1_random_enc_ckpt.dat', 'wb') as f:
     f.write(serialized_params)
