@@ -176,9 +176,9 @@ def split(arr):
     return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
 def mask_1d_to_2d(mask_enc_1d,mask_dec_1d):
-    mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
-    mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
-    mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
+    mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
+    mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
+    mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
     return mask_enc,mask_dec,mask_dec_enc
 
 lm_head = en_params['embedding']['embedding'].T
