@@ -56,15 +56,6 @@ en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 ch_params = load_ch_params()
 
 
-
-
-from flax.serialization import msgpack_restore
-with open('bart_stage1_ckpt.dat', 'rb') as f:
-    b = f.read()
-pretrained_params = msgpack_restore(b)
-pretrained_params = jax.tree_map(np.asarray, pretrained_params)
-
-
 en_params = load_params()
 
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
