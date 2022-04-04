@@ -64,7 +64,7 @@ en_params = load_params()
 params = {'train_encoder_layers': [ch_params['encoder_layers'][3], ch_params['encoder_layers'][4],
                                    ch_params['encoder_layers'][5]],
           'first_attn': en_params['encoder_layers'][0]['self_attn']}
-other_params = {'ch':ch_params,**en_params}
+other_params = {'ch': ch_params, **en_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
@@ -153,6 +153,7 @@ def stage1_eval_loss(params, other_params, src, dst, mask_enc, mask_dec, mask_de
     loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
+
 @functools.partial(jax.pmap, axis_name='num_devices')
 def stage_1_batch_eval(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
     loss = stage1_eval_loss(
@@ -175,11 +176,13 @@ def split(arr):
     """Splits the first axis of `arr` evenly across the number of devices."""
     return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
-def mask_1d_to_2d(mask_enc_1d,mask_dec_1d):
+
+def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
     mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
     mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
-    return mask_enc,mask_dec,mask_dec_enc
+    return mask_enc, mask_dec, mask_dec_enc
+
 
 lm_head = en_params['embedding']['embedding'].T
 
@@ -189,22 +192,27 @@ key = rand.PRNGKey(42)
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
 input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+
+
 # input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
 # decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 
 def eval(replicated_params, replicated_other_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh','dev/newsdev2017.en')
-    n_batches = len(eval_input_ids)//batch_size
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset(
+        'dev/newsdev2017.zh', 'dev/newsdev2017.en')
+    n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
     for i in tqdm_eval_batch:
         src = split(input_ids[i * batch_size:(i + 1) * batch_size])
         dst = split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
         labels = split(onp.hstack(
-            (dst[:, 1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
-        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size], mask_dec_1d[i * batch_size:(i + 1) * batch_size])
+            (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
+             np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
+        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
+                                                         mask_dec_1d[i * batch_size:(i + 1) * batch_size])
         loss = stage_1_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
-                                           mask_dec_enc, labels)
+                                  mask_dec_enc, labels)
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
     epoch_loss /= n_batches
@@ -254,7 +262,7 @@ for _ in tqdm_epoch:
         labels = split(onp.hstack(
             (decoder_input_ids[batch, 1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
-        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch],mask_dec_1d[batch])
+        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch], mask_dec_1d[batch])
 
         grads, loss = stage_1_batch_update(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
                                            mask_dec_enc, labels)
@@ -272,8 +280,8 @@ for _ in tqdm_epoch:
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
-    new_eval_loss = eval(replicated_params,replicated_other_params)
-    if new_eval_loss>eval_loss:
+    new_eval_loss = eval(replicated_params, replicated_other_params)
+    if new_eval_loss > eval_loss:
         break
 
     eval_loss = new_eval_loss
