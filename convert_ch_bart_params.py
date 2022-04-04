@@ -79,6 +79,7 @@ def convert_transformer_encoder_pt(params):
 
 params_trained = {
     'embedding': {'embedding': bart_trained['shared']['weight']},
+    'encoder_embed_positions': bart_trained['encoder']['embed_positions']['weight'],
     'encoder_embed_layer_norm': convert_layer_norm_pt(bart_trained['encoder']['layernorm_embedding']),
     'encoder_layers': [convert_transformer_encoder_pt(bart_trained['encoder']['layers'][str(i)]) for i in range(6)],
 }
@@ -91,6 +92,7 @@ bart_untrained = FlaxBartModel(config=config, seed=42).params
 
 params_untrained = {
     'embedding': {'embedding': bart_untrained['shared']['embedding']},
+    'encoder_embed_positions': bart_untrained['encoder']['embed_positions']['weight'],
     'encoder_embed_layer_norm': bart_untrained['encoder']['layernorm_embedding'],
     'encoder_layers': [convert_transformer_encoder(bart_untrained['encoder']['layers'][str(i)]) for i in range(6)],
 }
@@ -110,7 +112,7 @@ model_1 = params_untrained
 
 model_2 = {
     'embedding': params_trained['embedding'],
-    'encoder_embed_positions':params_trained['encoder_embed_positions'],
+    'encoder_embed_positions': params_trained['encoder_embed_positions'],
     'encoder_embed_layer_norm': params_trained['encoder_embed_layer_norm'],
     'encoder_layers': params_untrained['encoder_layers'],
 }
@@ -121,7 +123,7 @@ model_2 = {
 
 model_3 = {
     'embedding': params_trained['embedding'],
-    'encoder_embed_positions':params_trained['encoder_embed_positions'],
+    'encoder_embed_positions': params_trained['encoder_embed_positions'],
     'encoder_embed_layer_norm': params_trained['encoder_embed_layer_norm'],
     'encoder_layers': [
         params_trained['encoder_layers'][0],
