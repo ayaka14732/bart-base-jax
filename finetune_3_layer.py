@@ -194,7 +194,7 @@ input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wi
 
 @functools.partial(jax.pmap, axis_name='num_devices')
 def eval(replicated_params, replicated_other_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh','dev/newdev2017.zh')
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh','dev/newsdev2017.en')
     n_batches = len(eval_input_ids)//batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
