@@ -22,7 +22,7 @@ lm_head = params['embedding']['embedding'].T
 
 tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-sentences = ['Can you see the beautiful flowers <mask> alongside the track?', 'What the <mash> are your doing?']
+sentences = ['Can you see the beautiful flowers <mask> alongside the track?', 'What the <mask> are your doing?']
 batch = tokenizer(sentences, return_tensors='jax')
 
 src = batch.input_ids
