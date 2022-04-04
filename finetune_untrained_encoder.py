@@ -75,30 +75,6 @@ other_params = en_params
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
 
-# def load_dataset(filename):
-#     z = onp.load(filename)
-#
-#     src = z['input_ids']
-#     src_mask = z['attention_mask']
-#     dst = z['decoder_input_ids']
-#     dst_mask = z['decoder_attention_mask']
-#     n_sents = len(input_ids)
-#     # labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
-#
-#     return input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels
-#
-# def load_dataset(filename):
-#     z = onp.load(filename)
-#
-#     src = z['input_ids']
-#     src_mask = z['attention_mask']
-#     dst = z['decoder_input_ids']
-#     dst_mask = z['decoder_attention_mask']
-#     # n_sents = len(input_ids)
-#     labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
-#
-#     return src, src_mask, dst, dst_mask, labels
-
 
 def get_attn_values(params_dict):
     ret = []
