@@ -281,6 +281,7 @@ for _ in tqdm_epoch:
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
     new_eval_loss = eval(replicated_params, replicated_other_params)
+
     if new_eval_loss > eval_loss:
         break
 
