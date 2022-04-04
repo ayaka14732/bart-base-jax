@@ -13,6 +13,7 @@ def fwd_nmt_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc
     # params
 
     params_ch = params['ch']
+    linear_params = params['added_linear']
 
     ch_embedding: dict = params_ch['embedding']  # embedding
     ch_encoder_embed_positions: np.ndarray = params_ch['encoder_embed_positions']  # array
@@ -50,6 +51,7 @@ def fwd_nmt_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc
         else:
             src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
 
+    src = fwd_linear(linear_params,src)
     # src = fwd_embedding(embedding, src)
     # src = src + encoder_embed_positions[offset:width_enc+offset]
     src = fwd_layer_norm(encoder_embed_layer_norm, src)

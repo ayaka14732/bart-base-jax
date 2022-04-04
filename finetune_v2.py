@@ -8,7 +8,7 @@ from transformers import BertTokenizer, BartTokenizer, BartForConditionalGenerat
 from tqdm import trange
 import optax
 import functools
-from lib.fwd_nmt_transformer import fwd_nmt_transformer
+from lib.fwd_nmt_transformer_linear import fwd_nmt_transformer
 from dataloader import process_one_dataset
 import copy
 

@@ -8,7 +8,7 @@ from transformers import BertTokenizer, BartTokenizer, BartForConditionalGenerat
 from tqdm import trange
 import optax
 import functools
-from lib.fwd_nmt_transformer import fwd_nmt_transformer
+from lib.fwd_nmt_transformer_linear import fwd_nmt_transformer
 from dataloader import process_one_dataset
 import copy
 
@@ -63,13 +63,18 @@ with open('bart_stage1_ckpt.dat', 'rb') as f:
 pretrained_params = msgpack_restore(b)
 pretrained_params = jax.tree_map(np.asarray, pretrained_params)
 
+w_initializer = jax.nn.initializers.orthogonal()
+b_initializer = jax.nn.initializers.uniform(1/math.sqrt(768))
+linear_params = {'kernel':w_initializer(rand.PRNGKey(42), (768, 768), np.float32),'bias':b_initializer(rand.PRNGKey(42), (768,), np.float32)}
+# linear_params = pretrained_params['added_linear']
+
 
 en_params = load_params()
 
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
-params = {'ch':ch_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = en_params
+params = {'added_linear':linear_params, 'first_attn':en_params['encoder_layers'][0]['self_attn']}
+other_params = {**en_params,'ch':ch_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
@@ -242,5 +247,39 @@ other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
 params = {'added_linear':params['added_linear'],**other_params}
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
-with open('bart_stage1_randomenc_ckpt.dat', 'wb') as f:
+with open('bart_stage1_ckpt.dat', 'wb') as f:
     f.write(serialized_params)
+
+#stage 2
+# input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels = load_dataset('dataset.npz')
+# assert input_ids.shape[1] == attention_mask.shape[1] == decoder_input_ids.shape[1] == decoder_attention_mask.shape[1] == labels.shape[1] == max_length
+# n_sents = len(input_ids)
+#
+# params = {'added_linear':params['added_linear'],**other_params}
+#
+# optimizer = optax.lamb(learning_rate=0.001)
+# opt_state = optimizer.init(params)
+#
+#
+# tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
+# for _ in tqdm_epoch:
+#     epoch_loss = 0.
+#
+#     n_batches = n_sents // batch_size
+#     key, subkey = rand.split(key)
+#     shuffled_indices = rand.permutation(subkey, n_sents)
+#
+#     tqdm_batch = trange(n_batches, desc='Batch', leave=False)
+#
+#     for i in tqdm_batch:
+#         key, subkey = rand.split(key)
+#         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
+#
+#         replicated_params, loss, opt_state = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, optimizer, opt_state)
+#
+#         batch_loss = loss.item()
+#         epoch_loss += batch_loss
+#
+#     epoch_loss /= n_batches
+#     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
+
