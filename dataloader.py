@@ -49,7 +49,7 @@ def process_one_dataset(dataset_ch, dataset_en):
                     zh.append(linech)
                     en.append(lineen)
                     count+=1
-                    if coun==960:
+                    if count==960:
                         break
 
     with Pool() as p:
