@@ -92,7 +92,7 @@ bart_untrained = FlaxBartModel(config=config, seed=42).params
 
 params_untrained = {
     'embedding': {'embedding': bart_untrained['shared']['embedding']},
-    'encoder_embed_positions': bart_untrained['encoder']['embed_positions']['weight'],
+    'encoder_embed_positions': bart_untrained['encoder']['embed_positions']['embedding'],
     'encoder_embed_layer_norm': bart_untrained['encoder']['layernorm_embedding'],
     'encoder_layers': [convert_transformer_encoder(bart_untrained['encoder']['layers'][str(i)]) for i in range(6)],
 }
