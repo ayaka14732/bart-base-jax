@@ -206,5 +206,5 @@ other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
 other_params['ch']['encoder_layers']=params['ch_encoder_layers']
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(other_params)
-with open('bart_stage1_random_enc_ckpt.dat', 'wb') as f:
+with open('bart_stage1_keep_emb_ckpt.dat', 'wb') as f:
     f.write(serialized_params)
