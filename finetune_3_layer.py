@@ -181,10 +181,10 @@ def eval(replicated_params, replicated_other_params):
     for i in tqdm_eval_batch:
         src = split(input_ids[i * batch_size:(i + 1) * batch_size])
         dst = split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
-        #  labels = split(onp.hstack(
-        #     (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
-        #      np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
-        labels = dst
+        labels = split(onp.hstack(
+            (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
+             np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
+
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
                                                          mask_dec_1d[i * batch_size:(i + 1) * batch_size])
         loss = stage_1_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,

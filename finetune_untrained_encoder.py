@@ -10,6 +10,7 @@ import optax
 import functools
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
 from dataloader import process_one_dataset
+import json
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -17,7 +18,7 @@ from dataloader import process_one_dataset
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 6
+n_epoch = 1
 batch_size = 48
 learning_rate = 0.001
 max_length = 512
@@ -169,6 +170,7 @@ def eval(replicated_params, replicated_other_params):
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
     epoch_loss /= n_batches
+    print('dev_loss:{}'.format(eval_loss))
     return epoch_loss
 
 def save_ckpt():
@@ -249,6 +251,8 @@ for _ in tqdm_epoch:
         if i%4==0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
+    json.dump(losses,open('loss_log','w+'))
+    exit(0)
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
