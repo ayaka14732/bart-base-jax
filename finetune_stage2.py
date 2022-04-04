@@ -108,6 +108,7 @@ def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
 
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 
+@jax.jit
 @functools.partial(jax.pmap, axis_name='num_devices')
 def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     loss, grads = stage2_loss_fn(

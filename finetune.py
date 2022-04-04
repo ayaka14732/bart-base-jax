@@ -10,7 +10,6 @@ import optax
 import functools
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
 from dataloader import process_one_dataset
-import copy
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -113,7 +112,7 @@ def get_attn_values(params_dict):
 @jax.value_and_grad
 def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    fwd_params = {'added_linear':params['added_linear'],**other_params}
+    fwd_params = {'ch':params['ch'],**other_params}
     outputs = fwd_nmt_transformer(fwd_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     lm_head = other_params['embedding']['embedding'].T
     logits = outputs @ lm_head
@@ -121,41 +120,14 @@ def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc,
     loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
-@jax.jit
-@jax.value_and_grad
-def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
-    outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
-    lm_head = params['embedding']['embedding'].T
-    logits = outputs @ lm_head
-    logits = nn.softmax(logits)
-    loss = cross_entropy_loss(logits, labels) / len(labels)
-    return loss
 
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
-
+@jax.jit
 @functools.partial(jax.pmap, axis_name='num_devices')
 def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     loss, grads = stage1_loss_fn(
         params,
         other_params,
-        src,
-        dst,
-        mask_enc,
-        mask_dec,
-        mask_dec_enc,
-        labels,
-    )
-    # .reshape(8, batch_size // 8, max_length)
-
-    grads = jax.lax.pmean(grads, axis_name='num_devices')
-    loss = jax.lax.pmean(loss, axis_name='num_devices')
-
-    return grads, loss
-
-@functools.partial(jax.pmap, axis_name='num_devices')
-def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
-    loss, grads = stage2_loss_fn(
-        params,
         src,
         dst,
         mask_enc,
