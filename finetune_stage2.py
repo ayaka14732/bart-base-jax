@@ -235,8 +235,8 @@ for _ in tqdm_epoch:
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
-        if i % 4 == 0:
-            tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
+
+        tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
