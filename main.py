@@ -36,7 +36,7 @@ mask_enc_1d = batch.attention_mask.astype(np.bool_)
 
 i = 1
 # dst = np.zeros((len(sentences), 1), dtype=np.int32)
-dst = np.asarray(np.asarray([2])+src[:-1],dtype=np.int32)
+dst = np.asarray(np.asarray([2])+src[:,:-1],dtype=np.int32)
 print(tokenizer.batch_decode(dst, skip_special_tokens=False))
 
 # while True:
