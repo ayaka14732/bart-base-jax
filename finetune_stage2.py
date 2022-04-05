@@ -55,7 +55,7 @@ ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 from flax.serialization import msgpack_restore
-with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
+with open('bart_stage1_keep_emb_ckpt.dat', 'rb') as f:
     b = f.read()
 params = msgpack_restore(b)
 params = jax.tree_map(np.asarray, params)
@@ -254,7 +254,7 @@ params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
-with open('bart_stage2_random_enc_ckpt.dat', 'wb') as f:
+with open('bart_stage2_keep_emb_ckpt.dat', 'wb') as f:
     f.write(serialized_params)
 
 
