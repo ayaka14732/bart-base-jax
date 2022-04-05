@@ -85,7 +85,7 @@ def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
+def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels, opt_state):
     loss, grads = stage2_loss_fn(
         params,
         src,
@@ -99,8 +99,9 @@ def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels
 
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
-
-    return grads, loss
+    updates, opt_state = opt_update(grads, opt_state, params)
+    params = optax.apply_updates(params, updates)
+    return params, loss
 
 @jax.jit
 def stage2_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
@@ -182,7 +183,9 @@ n_sents = len(input_ids)
 
 # params = model.params
 optimizer = optax.adam(learning_rate=learning_rate)
-opt_state = optimizer.init(params)
+opt_state = optimizer.init(replicated_params)
+opt_state = jax.tree_map(lambda x: np.array([x] * n_devices), opt_state)
+opt_update = optimizer.update
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
 for _ in tqdm_epoch:
@@ -207,13 +210,13 @@ for _ in tqdm_epoch:
 
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch], mask_dec_1d[batch])
 
-        grads, loss = stage_2_batch_update(replicated_params, src, dst, mask_enc, mask_dec,
-                                           mask_dec_enc, labels)
+        replicated_params, loss = stage_2_batch_update(replicated_params, src, dst, mask_enc, mask_dec,
+                                           mask_dec_enc, labels, opt_state)
 
-        grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
-        updates, opt_state = optimizer.update(grads, opt_state, params)
-        params = optax.apply_updates(params, updates)
-        replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
+        # grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
+        # updates, opt_state = optimizer.update(grads, opt_state, params)
+        # params = optax.apply_updates(params, updates)
+        # replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
@@ -223,7 +226,7 @@ for _ in tqdm_epoch:
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
-    new_eval_loss = eval(replicated_params, replicated_other_params)
+    new_eval_loss = eval(replicated_params)
 
     if new_eval_loss > eval_loss:
         break
