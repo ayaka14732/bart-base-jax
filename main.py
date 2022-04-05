@@ -49,9 +49,7 @@ mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
 mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
 mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
-labels = onp.hstack(
-            (decoder_input_ids,
-             np.ones((len(input_ids), 1), dtype=np.int32) * tokenizer.pad_token_id))
+labels = src
 
 y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
 a = y @ lm_head
@@ -63,6 +61,7 @@ loss = -np.log(exp_loss)
 print(loss)
 
 a = np.argmax(softmax_probs[:, -1], axis=-1)
+print(tokenizer.batch_decode(src, skip_special_tokens=False))
 print(tokenizer.batch_decode(a, skip_special_tokens=False))
 
 # while True:
