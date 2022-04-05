@@ -31,7 +31,7 @@ def cross_entropy_loss(logits, labels, mask):
     softmax_probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
     exp_loss = np.take_along_axis(softmax_probs, labels[..., None], axis=-1)
     loss = -np.log(exp_loss)
-    # loss = loss * mask
+    loss = loss * mask
     return np.sum(loss)
 
 # 1. load params
