@@ -59,17 +59,17 @@ params = {
 
 param_labels = {
     'ch': {
-        'embedding': 'freeze',
-        'encoder_embed_layer_norm': 'freeze',
-        'encoder_embed_positions': 'freeze',
+        'embedding': 'train',
+        'encoder_embed_layer_norm': 'train',
+        'encoder_embed_positions': 'train',
         'encoder_layers': 'train',
     },
     'encoder_embed_layer_norm': 'train',
     'encoder_layers': 'train',
-    'embedding': 'freeze',
-    'decoder_embed_positions': 'freeze',
-    'decoder_embed_layer_norm': 'freeze',
-    'decoder_layers': 'freeze',
+    'embedding': 'train',
+    'decoder_embed_positions': 'train',
+    'decoder_embed_layer_norm': 'train',
+    'decoder_layers': 'train',
 }
 
 optimizer_scheme = {
@@ -77,11 +77,11 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
-optimizer = optax.chain(
-    optax.adaptive_grad_clip(0.1, eps=0.001),
-    optax.sgd(learning_rate=learning_rate)
-)
+optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+# optimizer = optax.chain(
+#     optax.adaptive_grad_clip(0.1, eps=0.001),
+#     optax.sgd(learning_rate=learning_rate)
+# )
 opt_state = optimizer.init(params)
 
 @jax.jit
