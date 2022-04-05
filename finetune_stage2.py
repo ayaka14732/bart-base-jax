@@ -73,9 +73,9 @@ replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 # en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
 
 
-params = {'ch': ch_params, **en_params}
+# params = {'ch': ch_params, **en_params}
 
-replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
+# replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 
 
 
