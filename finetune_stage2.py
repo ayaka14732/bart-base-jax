@@ -18,9 +18,9 @@ import copy
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 3
-batch_size = 40
-learning_rate = 0.001
+n_epoch = 1
+batch_size = 36
+learning_rate = 0.01
 max_length = 512
 n_devices = jax.local_device_count()
 
@@ -60,30 +60,6 @@ params = msgpack_restore(b)
 params = jax.tree_map(np.asarray, params)
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
-
-# def load_dataset(filename):
-#     z = onp.load(filename)
-#
-#     src = z['input_ids']
-#     src_mask = z['attention_mask']
-#     dst = z['decoder_input_ids']
-#     dst_mask = z['decoder_attention_mask']
-#     n_sents = len(input_ids)
-#     # labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
-#
-#     return input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, labels
-#
-# def load_dataset(filename):
-#     z = onp.load(filename)
-#
-#     src = z['input_ids']
-#     src_mask = z['attention_mask']
-#     dst = z['decoder_input_ids']
-#     dst_mask = z['decoder_attention_mask']
-#     # n_sents = len(input_ids)
-#     labels = onp.hstack((dst[:,1:], np.ones((n_sents, 1), dtype=np.int32) * ch_tokenizer.pad_token_id))
-#
-#     return src, src_mask, dst, dst_mask, labels
 
 
 def get_attn_values(params_dict):
@@ -127,16 +103,68 @@ def stage_2_batch_update(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels
 
     return grads, loss
 
+@jax.jit
+def stage2_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
+    outputs = fwd_nmt_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    lm_head = params['embedding']['embedding'].T
+    logits = outputs @ lm_head
+    loss = cross_entropy_loss(logits, labels) / len(labels)
+    return loss
+
+
+@functools.partial(jax.pmap, axis_name='num_devices')
+def stage_2_batch_eval(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
+    loss = stage2_eval_loss(
+        params,
+        src,
+        dst,
+        mask_enc,
+        mask_dec,
+        mask_dec_enc,
+        labels,
+    )
+    # .reshape(8, batch_size // 8, max_length)
+
+    loss = jax.lax.pmean(loss, axis_name='num_devices')
+    return loss
+
+
 def split(arr):
   """Splits the first axis of `arr` evenly across the number of devices."""
   return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
+def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
+    mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
+    mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
+    mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
+    return mask_enc, mask_dec, mask_dec_enc
 
 lm_head = params['embedding']['embedding'].T
 
 #stage 1
 key = rand.PRNGKey(42)
 
+def eval(replicated_params, replicated_other_params):
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset(
+        'dev/newsdev2017.zh', 'dev/newsdev2017.en')
+    n_batches = len(eval_input_ids) // batch_size
+    tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
+    epoch_loss = 0.
+    for i in tqdm_eval_batch:
+        src = split(input_ids[i * batch_size:(i + 1) * batch_size])
+        dst = split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
+        labels = split(onp.hstack(
+            (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
+             np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
+
+        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
+                                                         mask_dec_1d[i * batch_size:(i + 1) * batch_size])
+        loss = stage_2_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
+                                  mask_dec_enc, labels)
+        batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
+        epoch_loss += batch_loss
+    epoch_loss /= n_batches
+    return epoch_loss
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
@@ -172,9 +200,7 @@ for _ in tqdm_epoch:
         dst = split(decoder_input_ids[batch])
         labels = split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
-        mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
-        mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
-        mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
+        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch], mask_dec_1d[batch])
 
         grads, loss = stage_2_batch_update(replicated_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
 
