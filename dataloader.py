@@ -23,8 +23,8 @@ def encode_en_batch(sents):
     #assert isinstance(sents, list)
     #assert len(sents) > 1
     y = en_tokenizer(sents, return_tensors='np', max_length=max_length_en, padding='max_length', truncation=True)
-    data = np.hstack(([2],y.input_ids))
-    mask = np.hstack([1],y.attention_mask)
+    data = np.hstack(([[2]]*len(sents),y.input_ids))
+    mask = np.hstack([[1]]*len(sents),y.attention_mask)
     return data, mask
 
 def encode_ch_batch(sents):
