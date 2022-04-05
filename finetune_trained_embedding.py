@@ -59,8 +59,8 @@ params = {
 
 param_labels = {
     'ch': {
-        'embedding': 'train',
-        'encoder_embed_layer_norm': 'train',
+        'embedding': 'freeze',
+        'encoder_embed_layer_norm': 'freeze',
         'encoder_embed_positions': 'train',
         'encoder_layers': 'train',
     },
