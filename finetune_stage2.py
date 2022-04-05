@@ -10,7 +10,7 @@ import optax
 import functools
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
 from dataloader import process_one_dataset
-import copy
+
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -188,6 +188,7 @@ opt_state = optimizer.init(params)
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
 for _ in tqdm_epoch:
     epoch_loss = 0.
+    eval_loss = math.inf
 
     n_batches = n_sents // batch_size
     key, subkey = rand.split(key)
@@ -197,15 +198,17 @@ for _ in tqdm_epoch:
 
     for i in tqdm_batch:
         key, subkey = rand.split(key)
-        batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
+        batch = shuffled_indices[i * batch_size:(i + 1) * batch_size]
 
         src = split(input_ids[batch])
         dst = split(decoder_input_ids[batch])
-        labels = split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
+        labels = split(onp.hstack(
+            (decoder_input_ids[batch, 1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch], mask_dec_1d[batch])
 
-        grads, loss = stage_2_batch_update(replicated_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
+        grads, loss = stage_2_batch_update(replicated_params, src, dst, mask_enc, mask_dec,
+                                           mask_dec_enc, labels)
 
         grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
         updates, opt_state = optimizer.update(grads, opt_state, params)
@@ -214,12 +217,18 @@ for _ in tqdm_epoch:
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
-        if i%4==0:
+        if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
+    new_eval_loss = eval(replicated_params, replicated_other_params)
+
+    if new_eval_loss > eval_loss:
+        break
+
+    eval_loss = new_eval_loss
 
 #save stage 1 checkpoint
 params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
