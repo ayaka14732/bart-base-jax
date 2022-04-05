@@ -193,15 +193,15 @@ for _ in tqdm_epoch:
         if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
+        if i%2000==1999:
+            new_eval_loss = evaluate(replicated_params)
+            if new_eval_loss > eval_loss:
+                break
+
+            eval_loss = new_eval_loss
+            save_ckpt()
+
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
-
-    new_eval_loss = evaluate(replicated_params)
-    print(new_eval_loss)
-
-    if new_eval_loss > eval_loss:
-        break
-
-    eval_loss = new_eval_loss
 
     save_ckpt()
