@@ -36,7 +36,7 @@ def encode_ch_batch(sents):
     return data, mask
 
 
-def process_one_dataset(dataset_ch, dataset_en):
+def process_one_dataset(dataset_ch, dataset_en, length = math.inf):
     with open(join(expanduser(f'~/dataset/processed'), dataset_ch), encoding='utf-8') as fch:
         with open(join(expanduser(f'~/dataset/processed'), dataset_en), encoding='utf-8') as fen:
             zh = []
@@ -48,9 +48,9 @@ def process_one_dataset(dataset_ch, dataset_en):
                 if len(linech) <= max_length_ch - 2 and len(lineen.split()) <= max_length_en - 2:  # skip long sentences
                     zh.append(linech)
                     en.append(lineen)
-                    # count+=1
-                    # if count==14400:
-                    #     break
+                    count+=1
+                    if count==length:
+                        break
 
     with Pool() as p:
         xs = list(tqdm(p.imap(encode_en_batch, chunks(en, chunksize)), total=math.ceil(len(en) / chunksize)))

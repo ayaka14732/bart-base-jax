@@ -141,7 +141,7 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
 
 lm_head = params['embedding']['embedding'].T
 
-#stage 1
+#stage 2
 key = rand.PRNGKey(42)
 
 def eval(replicated_params):
