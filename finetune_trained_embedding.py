@@ -77,11 +77,11 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-optimizer = optax.multi_transform(optimizer_scheme, param_labels)
-# optimizer = optax.chain(
-#     optax.adaptive_grad_clip(0.1, eps=0.001),
-#     optax.sgd(learning_rate=learning_rate)
-# )
+# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+optimizer = optax.chain(
+    optax.adaptive_grad_clip(0.1, eps=0.001),
+    optax.sgd(learning_rate=learning_rate)
+)
 opt_state = optimizer.init(params)
 
 @jax.jit
