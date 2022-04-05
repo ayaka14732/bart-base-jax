@@ -35,34 +35,25 @@ src = batch.input_ids
 mask_enc_1d = batch.attention_mask.astype(np.bool_)
 
 i = 1
-# dst = np.zeros((len(sentences), 1), dtype=np.int32)
-dst = np.asarray(np.asarray([2])+src[:,:-1],dtype=np.int32)
-print(tokenizer.batch_decode(dst, skip_special_tokens=False))
+dst = np.zeros((len(sentences), 1), dtype=np.int32)
 
-# while True:
-mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
 
-mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+while True:
+    mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
 
-y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+    mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
+    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
-# a = nn.softmax(y @ lm_head)
-# a = np.argmax(a[:, -1], axis=-1)
+    y = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
 
-a = y @ lm_head
-exp_logits = np.exp(a)
-softmax_probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
-exp_loss = np.take_along_axis(softmax_probs, src[..., None], axis=-1)
-loss = -np.log(exp_loss)
-print(loss)
+    a = nn.softmax(y @ lm_head)
+    a = np.argmax(a[:, -1], axis=-1)
 
-dst = np.argmax(softmax_probs[:, -1], axis=-1)
-# i += 1
-# dst = np.hstack((dst, a[..., None]))
+    i += 1
+    dst = np.hstack((dst, a[..., None]))
 
-# if np.all(a == 2):
-#     break
+    if np.all(a == 2):
+        break
 print(tokenizer.batch_decode(src, skip_special_tokens=False))
 print(tokenizer.batch_decode(dst, skip_special_tokens=False))

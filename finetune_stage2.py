@@ -54,13 +54,29 @@ def load_ch_params():
 ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-from flax.serialization import msgpack_restore
-with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
-    b = f.read()
-params = msgpack_restore(b)
-params = jax.tree_map(np.asarray, params)
+# from flax.serialization import msgpack_restore
+# with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
+#     b = f.read()
+# params = msgpack_restore(b)
+# params = jax.tree_map(np.asarray, params)
+#
+# replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
+
+ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
+en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+# model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
+# ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
+ch_params = load_ch_params()
+
+en_params = load_params()
+
+# en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
+
+
+params = {'ch': ch_params, **en_params}
 
 replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
+
 
 
 def get_attn_values(params_dict):
