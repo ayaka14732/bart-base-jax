@@ -103,7 +103,7 @@ def stage_1_batch_update(params, src, dst, mask_enc, mask_dec, mask_dec_enc, lab
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
-    return params, loss
+    return params, opt_state, loss
 
 @jax.jit
 def stage1_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
@@ -201,7 +201,7 @@ for _ in tqdm_epoch:
 
         key, subkey = (lambda keys: (keys[0], keys[1:]))(rand.split(key, num=9))
 
-        replicated_params, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
+        replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
         batch_loss = replicated_loss[0].item()
         epoch_loss += batch_loss
