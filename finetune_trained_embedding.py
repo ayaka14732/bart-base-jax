@@ -21,7 +21,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 
 n_epoch = 1
 batch_size = 48
-learning_rate = 0.005
+learning_rate = 0.01
 max_length = 512
 devices = jax.local_devices()
 n_devices = jax.local_device_count()
