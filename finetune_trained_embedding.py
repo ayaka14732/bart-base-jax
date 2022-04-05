@@ -175,7 +175,7 @@ for _ in tqdm_epoch:
     key, subkey = rand.split(key)
     shuffled_indices = rand.permutation(subkey, n_sents)
 
-    tqdm_batch = trange(n_batches, desc='Batch', leave=False)
+    tqdm_batch = trange(150, desc='Batch', leave=False)
 
     for i in tqdm_batch:
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
@@ -208,7 +208,7 @@ for _ in tqdm_epoch:
         if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
-    epoch_loss /= n_batches
+    epoch_loss /= 150
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
     new_eval_loss = evaluate(replicated_params)
