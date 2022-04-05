@@ -1,15 +1,16 @@
 import jax
-import jax.nn as nn
 import jax.numpy as np
 import jax.random as rand
 import math
 import numpy as onp
-from transformers import BertTokenizer, BartTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
+from transformers import BertTokenizer, BartTokenizer
 from tqdm import trange
 import optax
 import functools
-from lib.fwd_nmt_transformer import fwd_nmt_transformer
 from dataloader import process_one_dataset
+
+from lib.param_utils.load_params import load_params
+from lib.fwd_nmt_transformer import fwd_nmt_transformer
 
 #Procedure:
 #1. load a pretrained BART-base-chinese encoder
@@ -21,6 +22,7 @@ n_epoch = 1
 batch_size = 48
 learning_rate = 0.01
 max_length = 512
+devices = jax.local_devices()
 n_devices = jax.local_device_count()
 
 def cross_entropy_loss(logits, labels):
@@ -30,160 +32,115 @@ def cross_entropy_loss(logits, labels):
     loss = -np.log(exp_loss)
     return np.sum(loss)
 
-def load_params():
-    from flax.serialization import msgpack_restore
-    with open('bart_params.dat', 'rb') as f:
-        b = f.read()
-    params = msgpack_restore(b)
-    params = jax.tree_map(np.asarray, params)  # NumPy array to JAX array
-    return params
-
-def load_ch_params():
-    from flax.serialization import msgpack_restore
-    with open('ch_trained_emb.dat', 'rb') as f:
-        b = f.read()
-    ch_params = msgpack_restore(b)
-    ch_params = jax.tree_map(np.asarray, ch_params)  # NumPy array to JAX array
-    return ch_params
-
-
-
 # 1. load params
-ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
+
+ch_tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-# model = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
-# ch_parameters = recursive_turn_to_jnp(dict(model.model.named_parameters()))
-ch_params = load_ch_params()
 
-en_params = load_params()
+params_ch = jax.tree_map(np.asarray, load_params('ch_trained_emb.dat'))
+params_en = jax.tree_map(np.asarray, load_params('bart_params.dat'))
 
-# en_params['encoder_layers'][0]['self_attn'] = pretrained_params['encoder_layers'][0]['self_attn']
+params = {
+    'ch': {
+        'embedding': params_ch['embedding'],
+        'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
+        'encoder_embed_positions': params_ch['encoder_embed_positions'],
+        'encoder_layers': params_ch['encoder_layers'],
+    },
+    'embedding': params_en['embedding'],
+    'decoder_embed_positions': params_en['decoder_embed_positions'],
+    'encoder_embed_layer_norm': params_en['encoder_embed_layer_norm'],
+    'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
+    'encoder_layers': params_en['encoder_layers'],
+    'decoder_layers': params_en['decoder_layers'],
+}
 
+param_labels = {
+    'ch': {
+        'embedding': 'freeze',
+        'encoder_embed_layer_norm': 'freeze',
+        'encoder_embed_positions': 'freeze',
+        'encoder_layers': 'train',
+    },
+    'encoder_embed_layer_norm': 'train',
+    'encoder_layers': 'train',
+    'embedding': 'freeze',
+    'decoder_embed_positions': 'freeze',
+    'decoder_embed_layer_norm': 'freeze',
+    'decoder_layers': 'freeze',
+}
 
-params = {'ch_encoder_layers':ch_params['encoder_layers'], 'first_attn':en_params['encoder_layers'][0]['self_attn']}
-other_params = {'ch':ch_params,**en_params}
-
-replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
-replicated_other_params = jax.tree_map(lambda x: np.array([x] * n_devices), other_params)
-
-
-def get_attn_values(params_dict):
-    ret = []
-    for k in params_dict:
-        if k=='ff':
-            continue
-        if isinstance(params_dict[k],np.ndarray):
-            ret.append(params_dict[k])
-        else:
-            ret.extend(get_attn_values(params_dict[k]))
+replicated_params = jax.device_put_replicated(params, devices)
 
 @jax.jit
 @jax.value_and_grad
-def stage1_loss_fn(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
-    other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    other_params['ch']['encoder_layers']=params['ch_encoder_layers']
-    outputs = fwd_nmt_transformer(other_params,src,dst,mask_enc, mask_dec, mask_dec_enc)
-    lm_head = other_params['embedding']['embedding'].T
+def stage1_loss_fn(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+    outputs = fwd_nmt_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
+    lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
-
-# https://github.com/google/jax/issues/9973#issuecomment-1073579382
-
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_1_batch_update(params,other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
-    loss, grads = stage1_loss_fn(
-        params,
-        other_params,
-        src,
-        dst,
-        mask_enc,
-        mask_dec,
-        mask_dec_enc,
-        labels,
-    )
-    # .reshape(8, batch_size // 8, max_length)
-
+def stage_1_batch_update(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+    loss, grads = stage1_loss_fn(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
-
     return grads, loss
 
 @jax.jit
-def stage1_eval_loss(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
-    other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    other_params['ch']['encoder_layers'] = params['ch_encoder_layers']
-    outputs = fwd_nmt_transformer(other_params, src, dst, mask_enc, mask_dec, mask_dec_enc)
-    lm_head = other_params['embedding']['embedding'].T
+def stage1_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
+    outputs = fwd_nmt_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 
-
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_1_batch_eval(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
-    loss = stage1_eval_loss(
-        params,
-        other_params,
-        src,
-        dst,
-        mask_enc,
-        mask_dec,
-        mask_dec_enc,
-        labels,
-    )
-    # .reshape(8, batch_size // 8, max_length)
-
+def stage_1_batch_eval(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
+    loss = stage1_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels)
     loss = jax.lax.pmean(loss, axis_name='num_devices')
     return loss
 
 
 
 
-def split(arr):
-  """Splits the first axis of `arr` evenly across the number of devices."""
-  return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
+def device_split(arr):
+    '''Splits the first axis of `arr` evenly across the number of devices.'''
+    return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
 def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
-    mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
-    mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
-    mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
+    mask_enc = device_split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
+    mask_dec = device_split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
+    mask_dec_enc = device_split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
     return mask_enc, mask_dec, mask_dec_enc
 
-def eval(replicated_params, replicated_other_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset(
-        'dev/newsdev2017.zh', 'dev/newsdev2017.en')
+def evaluate(replicated_params):
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
     n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
     for i in tqdm_eval_batch:
-        src = split(input_ids[i * batch_size:(i + 1) * batch_size])
-        dst = split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
-        labels = split(onp.hstack(
+        src = device_split(input_ids[i * batch_size:(i + 1) * batch_size])
+        dst = device_split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
+        labels = device_split(onp.hstack(
             (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
              np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
                                                          mask_dec_1d[i * batch_size:(i + 1) * batch_size])
-        loss = stage_1_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
-                                  mask_dec_enc, labels)
+        loss = stage_1_batch_eval(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels)
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
     epoch_loss /= n_batches
     return epoch_loss
 
 def save_ckpt():
-    params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
-    other_params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_other_params))
-    other_params['encoder_layers'][0]['self_attn'] = params['first_attn']
-    other_params['ch']['encoder_layers'] = params['ch_encoder_layers']
+    params = jax.tree_map(lambda x: x[0], replicated_params)
     from flax.serialization import msgpack_serialize
-    serialized_params = msgpack_serialize(other_params)
+    serialized_params = msgpack_serialize(params)
     with open('bart_stage1_keep_emb_ckpt.dat', 'wb') as f:
         f.write(serialized_params)
 
-
-lm_head = en_params['embedding']['embedding'].T
 
 #stage 1
 key = rand.PRNGKey(42)
@@ -200,9 +157,12 @@ input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wi
 
 n_sents = len(input_ids)
 
+optimizer_scheme = {
+    'train': optax.adam(learning_rate=learning_rate),
+    'freeze': optax.set_to_zero(),
+}
 
-# params = model.params
-optimizer = optax.adam(learning_rate=learning_rate)
+optimizer = optax.multi_transform(optimizer_scheme, param_labels)
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
@@ -217,33 +177,33 @@ for _ in tqdm_epoch:
     tqdm_batch = trange(n_batches, desc='Batch', leave=False)
 
     for i in tqdm_batch:
-        key, subkey = rand.split(key)
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
-        src = split(input_ids[batch])
-        dst = split(decoder_input_ids[batch])
-        labels = split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
+        src = device_split(input_ids[batch])
+        dst = device_split(decoder_input_ids[batch])
+        labels = device_split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
-        mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
-        mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
-        mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
+        mask_enc = device_split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
+        mask_dec = device_split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
+        mask_dec_enc = device_split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
 
-        grads, loss = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
+        key, subkey = (lambda keys: (keys[0], keys[1:]))(rand.split(key, num=9))
+        grads, loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkey)
 
-        grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
+        grads = jax.tree_map(lambda x: x[0], grads)
         updates, opt_state = optimizer.update(grads, opt_state, params)
         params = optax.apply_updates(params, updates)
-        replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
+        replicated_params = jax.device_put_replicated(params, devices)
 
-        batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
+        batch_loss = jax.tree_map(lambda x: x[0], loss).item()
         epoch_loss += batch_loss
-        if i%4==0:
+        if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
-    new_eval_loss = eval(replicated_params, replicated_other_params)
+    new_eval_loss = evaluate(replicated_params)
 
     if new_eval_loss > eval_loss:
         break
