@@ -79,7 +79,6 @@ def stage2_loss_fn(params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels):
     outputs = fwd_nmt_transformer(params,src,dst,mask_enc, mask_dec, mask_dec_enc)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
-    logits = nn.softmax(logits)
     loss = cross_entropy_loss(logits, labels) / len(labels)
     return loss
 

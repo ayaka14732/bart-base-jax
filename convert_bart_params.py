@@ -1,99 +1,63 @@
-from flax.serialization import msgpack_serialize, msgpack_restore
 import jax
-import json
-import jax.numpy as np
-import numpy as onp
-from transformers import FlaxBartForSequenceClassification
+from transformers import BartForConditionalGeneration, FlaxBartForConditionalGeneration
 
-# Option 1: `msgpack_serialize` and `msgpack_restore`
-# Option 2: `pickle.dumps` and `pickle.loads`
-serialize = msgpack_serialize
-deserialize = msgpack_restore
+from lib.param_utils.assert_tree_equal import assert_tree_equal
+from lib.param_utils.save_params import save_params
+from lib.param_utils.flax2jax import flax2jax
+from lib.param_utils.pt2jax import pt2jax
+from lib.param_utils.jax2flax import jax2flax
 
-model = FlaxBartForSequenceClassification.from_pretrained('facebook/bart-base')
-bart = model.params['model']
+# facebook/bart-base
 
-def convert_qkv(params):
-    return {
-        'kernel': params['kernel'].reshape(768, 12, 64).transpose(1, 0, 2),
-        'bias': params['bias'].reshape(12, 64),
-    }
+model_bart_base_en = FlaxBartForConditionalGeneration.from_pretrained('facebook/bart-base')
+params_bart_base_en_flax = model_bart_base_en.params['model']
+params_bart_base_en = flax2jax(params_bart_base_en_flax)
+save_params(params_bart_base_en, 'params_bart_base_en.dat')
 
-def convert_transformer_encoder(params):
-    return {
-        'self_attn': {
-            'q_proj': convert_qkv(params['self_attn']['q_proj']),
-            'k_proj': convert_qkv(params['self_attn']['k_proj']),
-            'v_proj': convert_qkv(params['self_attn']['v_proj']),
-            'ff': params['self_attn']['out_proj'],
-        },
-        'self_attn_layer_norm': params['self_attn_layer_norm'],
-        'ff0': params['fc1'],
-        'ff1': params['fc2'],
-        'final_layer_norm': params['final_layer_norm'],
-    }
+# fnlp/bart-base-chinese
 
-def convert_transformer_decoder(params):
-    return {
-        'self_attn': {
-            'q_proj': convert_qkv(params['self_attn']['q_proj']),
-            'k_proj': convert_qkv(params['self_attn']['k_proj']),
-            'v_proj': convert_qkv(params['self_attn']['v_proj']),
-            'ff': params['self_attn']['out_proj'],
-        },
-        'self_attn_layer_norm': params['self_attn_layer_norm'],
-        'cross_attn': {
-            'q_proj': convert_qkv(params['encoder_attn']['q_proj']),
-            'k_proj': convert_qkv(params['encoder_attn']['k_proj']),
-            'v_proj': convert_qkv(params['encoder_attn']['v_proj']),
-            'ff': params['encoder_attn']['out_proj'],
-        },
-        'cross_attn_layer_norm': params['encoder_attn_layer_norm'],
-        'ff0': params['fc1'],
-        'ff1': params['fc2'],
-        'final_layer_norm': params['final_layer_norm'],
-    }
+model_bart_base_zh = BartForConditionalGeneration.from_pretrained('fnlp/bart-base-chinese')
+params_bart_base_zh = pt2jax(dict(model_bart_base_zh.model.named_parameters()))
 
-params = {
-    'embedding': {'embedding': bart['shared']['embedding']},
-    'encoder_embed_positions': bart['encoder']['embed_positions']['embedding'],
-    'decoder_embed_positions': bart['decoder']['embed_positions']['embedding'],
-    'encoder_embed_layer_norm': bart['encoder']['layernorm_embedding'],
-    'decoder_embed_layer_norm': bart['decoder']['layernorm_embedding'],
-    'encoder_layers': [convert_transformer_encoder(bart['encoder']['layers'][str(i)]) for i in range(6)],
-    'decoder_layers': [convert_transformer_decoder(bart['decoder']['layers'][str(i)]) for i in range(6)],
-}
+def check_shape_equal_except_for_embeddings():
+    def inner(x):
+        embed_sizes = (
+            # vocab size (50265 vs 21128)
+            model_bart_base_en.config.vocab_size,
+            model_bart_base_zh.config.vocab_size,
+            # max position embeddings (1026 vs 514)
+            model_bart_base_en.config.max_position_embeddings + 2,
+            model_bart_base_zh.config.max_position_embeddings + 2,
+        )
+        return tuple(-1 if i in embed_sizes else i for i in x.shape)
+    assert_tree_equal(
+        jax.tree_map(inner, params_bart_base_en),
+        jax.tree_map(inner, params_bart_base_zh),
+    )
+check_shape_equal_except_for_embeddings()
 
-arr2shape = lambda x: str(x.shape).replace(',)', ')')
-d = jax.tree_map(arr2shape, params)
-print(json.dumps(d, indent=2))
+save_params(params_bart_base_zh, 'params_bart_base_zh.dat')
 
-serialized_params = serialize(params)
-recovered_params = deserialize(serialized_params)
+# randomly initialized fnlp/bart-base-chinese
 
-def assert_tree_equal(a, b) -> bool:
-    if isinstance(a, np.ndarray) or isinstance(a, onp.ndarray):
-        assert isinstance(b, np.ndarray) or isinstance(b, onp.ndarray), f'{type(b)}'
-        assert np.allclose(a, b)
+model_bart_base_zh_rand = FlaxBartForConditionalGeneration(config=model_bart_base_zh.config, seed=42)
+params_bart_base_zh_rand = flax2jax(model_bart_base_zh_rand.params['model'])
 
-    elif isinstance(a, dict):
-        assert isinstance(b, dict), f'{type(b)}'
-        keys_a = sorted(a)
-        keys_b = sorted(b)
-        assert keys_a == keys_b
-        for key in keys_a:
-            assert_tree_equal(a[key], b[key])
+assert_tree_equal(
+    jax.tree_map(lambda x: x.shape, params_bart_base_zh),
+    jax.tree_map(lambda x: x.shape, params_bart_base_zh_rand),
+)
 
-    elif isinstance(a, list):
-        assert isinstance(b, list), f'{type(b)}'
-        assert len(a) == len(b)
-        for a_, b_ in zip(a, b):
-            assert_tree_equal(a_, b_)
+save_params(params_bart_base_zh_rand, 'params_bart_base_zh_rand.dat')
 
-    else:
-        raise NotImplementedError(f'Unsupported element type: {type(a)}')
+# roundtrip test for flax2jax => jax2flax
 
-assert_tree_equal(params, recovered_params)
+params_bart_base_en_flax_roundtrip = jax2flax(params_bart_base_en)
+assert_tree_equal(params_bart_base_en_flax, params_bart_base_en_flax_roundtrip)
 
-with open('bart_params.dat', 'wb') as f:
-    f.write(serialized_params)
+# roundtrip test for flax2pt (done by the transformers library) => pt2jax and flax2jax
+
+model_bart_base_zh_rand.save_pretrained('/tmp/pretrained')
+model_bart_base_zh_rand_pt = BartForConditionalGeneration.from_pretrained('/tmp/pretrained', from_flax=True)
+params_bart_base_zh_rand_ = pt2jax(dict(model_bart_base_zh_rand_pt.model.named_parameters()))
+assert_tree_equal(params_bart_base_zh_rand, params_bart_base_zh_rand_)
