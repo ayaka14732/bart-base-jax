@@ -130,8 +130,9 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     mask_dec_enc = device_split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
     return mask_enc, mask_dec, mask_dec_enc
 
+eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
+
 def evaluate(replicated_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
     n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
@@ -208,14 +209,15 @@ for _ in tqdm_epoch:
         if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
+        if i%2000==1999:
+            new_eval_loss = evaluate(replicated_params)
+            if new_eval_loss > eval_loss:
+                break
+
+            eval_loss = new_eval_loss
+            save_ckpt()
+
     epoch_loss /= n_sents
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
-
-    new_eval_loss = evaluate(replicated_params)
-
-    if new_eval_loss > eval_loss:
-        break
-
-    eval_loss = new_eval_loss
 
     save_ckpt()
