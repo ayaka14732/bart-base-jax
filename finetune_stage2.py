@@ -183,7 +183,7 @@ n_sents = len(input_ids)
 
 
 # params = model.params
-optimizer = optax.adam(learning_rate=learning_rate)
+optimizer = optax.sgd(learning_rate=learning_rate)
 opt_state = optimizer.init(replicated_params)
 opt_update = optimizer.update
 
