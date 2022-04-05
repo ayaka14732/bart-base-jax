@@ -27,7 +27,7 @@ tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 # sentences = ['Can you see the beautiful flowers <mask> alongside the track?']
 
-sentences = ['<s> Can you see the beautiful flowers blooming alongside the track?']
+sentences = ['Can you see the beautiful flowers blooming alongside the track?']
 
 batch = tokenizer(sentences, return_tensors='jax',padding=True)
 
@@ -36,7 +36,7 @@ mask_enc_1d = batch.attention_mask.astype(np.bool_)
 
 i = 1
 # dst = np.zeros((len(sentences), 1), dtype=np.int32)
-dst = src
+dst = '<s>' + src[:-1]
 
 while True:
     mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
