@@ -52,7 +52,8 @@ def fwd_nmt_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc
 
     # src = fwd_embedding(embedding, src)
     # src = src + encoder_embed_positions[offset:width_enc+offset]
-    src = fwd_layer_norm(encoder_embed_layer_norm, src)
+    # src = fwd_layer_norm(encoder_embed_layer_norm, src)
+
     if dropout_key is not None:
         src = dropout(next(keys), src)
     for encoder_layer in encoder_layers:

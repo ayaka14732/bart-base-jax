@@ -64,12 +64,12 @@ param_labels = {
         'encoder_embed_positions': 'train',
         'encoder_layers': 'train',
     },
-    'encoder_embed_layer_norm': 'train',
-    'encoder_layers': 'train',
-    'embedding': 'train',
-    'decoder_embed_positions': 'train',
-    'decoder_embed_layer_norm': 'train',
-    'decoder_layers': 'train',
+    'encoder_embed_layer_norm': 'freeze',
+    'encoder_layers': 'freeze',
+    'embedding': 'freeze',
+    'decoder_embed_positions': 'freeze',
+    'decoder_embed_layer_norm': 'freeze',
+    'decoder_layers': ['train','freeze','freeze','freeze','freeze','freeze'],
 }
 
 optimizer_scheme = {

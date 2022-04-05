@@ -59,13 +59,13 @@ params = {
 
 param_labels = {
     'ch': {
-        'embedding': 'freeze',
-        'encoder_embed_layer_norm': 'freeze',
-        'encoder_embed_positions': 'freeze',
+        'embedding': 'train',
+        'encoder_embed_layer_norm': 'train',
+        'encoder_embed_positions': 'train',
         'encoder_layers': 'train',
     },
     'encoder_embed_layer_norm': 'train',
-    'encoder_layers': 'train',
+    'encoder_layers': 'freeze',
     'embedding': 'freeze',
     'decoder_embed_positions': 'freeze',
     'decoder_embed_layer_norm': 'freeze',
@@ -79,11 +79,11 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
-optimizer = optax.chain(
-    optax.adaptive_grad_clip(0.1, eps=0.001),
-    optax.sgd(learning_rate=learning_rate)
-)
+optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+# optimizer = optax.chain(
+#     optax.adaptive_grad_clip(0.1, eps=0.001),
+#     optax.sgd(learning_rate=learning_rate)
+# )
 opt_state = optimizer.init(params)
 
 @jax.jit
@@ -105,7 +105,7 @@ def stage_1_batch_update(params, src, dst, mask_enc, mask_dec, mask_dec_enc, lab
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
-    return params, loss
+    return params, opt_state, loss
 
 @jax.jit
 def stage1_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
@@ -205,7 +205,7 @@ for _ in tqdm_epoch:
 
         key, subkey = (lambda keys: (keys[0], keys[1:]))(rand.split(key, num=9))
 
-        replicated_params, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
+        replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
         batch_loss = replicated_loss[0].item()
         epoch_loss += batch_loss
