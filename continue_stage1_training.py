@@ -144,7 +144,7 @@ def save_ckpt():
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikititle.zh', 'wikititle.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikititles.zh', 'wikititles.en')
 key = rand.PRNGKey(42)
 n_sents = len(input_ids)
 
