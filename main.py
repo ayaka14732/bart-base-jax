@@ -37,7 +37,7 @@ tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 from dataloader import process_one_dataset
 input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en',1)
-src = decoder_input_ids[1:]
+src = decoder_input_ids[:,1:]
 dst = decoder_input_ids
 
 i = 1
@@ -63,6 +63,7 @@ loss = -np.log(exp_loss)
 print(loss)
 
 a = np.argmax(softmax_probs[:, -1], axis=-1)
+print(tokenizer.batch_decode(a, skip_special_tokens=False))
 
 # while True:
 #     # mask_dec_1d = np.ones((len(sentences), i), dtype=np.bool_)
