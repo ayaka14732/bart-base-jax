@@ -18,8 +18,6 @@ def load_params():
     params = jax.tree_map(np.asarray, params)  # NumPy array to JAX array
     return params
 
-params =
-
 
 params = load_params()
 

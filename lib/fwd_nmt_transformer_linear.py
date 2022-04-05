@@ -17,7 +17,7 @@ def fwd_nmt_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc
 
     ch_embedding: dict = params_ch['embedding']  # embedding
     ch_encoder_embed_positions: np.ndarray = params_ch['encoder_embed_positions']  # array
-    ch_encoder_embed_layer_norm: dict = params['encoder_embed_layer_norm']  # layer norm
+    ch_encoder_embed_layer_norm: dict = params_ch['encoder_embed_layer_norm']  # layer norm
     ch_encoder_layers: list = params_ch['encoder_layers']  # list of transformer encoder
 
 

@@ -208,7 +208,7 @@ n_sents = len(input_ids)
 
 
 # params = model.params
-optimizer = optax.adam(learning_rate=learning_rate)
+optimizer = optax.lamb(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
 # losses = []
