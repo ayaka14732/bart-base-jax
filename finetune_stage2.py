@@ -193,6 +193,7 @@ for _ in tqdm_epoch:
     n_batches = n_sents // batch_size
     key, subkey = rand.split(key)
     shuffled_indices = rand.permutation(subkey, n_sents)
+    shuffled_indices = onp.asarray(shuffled_indices)
 
     tqdm_batch = trange(n_batches, desc='Batch', leave=False)
 
