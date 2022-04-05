@@ -384,7 +384,7 @@ def save_ckpt():
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en')
 # input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
 # decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 
