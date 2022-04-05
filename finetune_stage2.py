@@ -19,7 +19,7 @@ import copy
 #4. fine-tune all params with decayed lr
 
 n_epoch = 1
-batch_size = 36
+batch_size = 32
 learning_rate = 0.01
 max_length = 512
 n_devices = jax.local_device_count()
@@ -113,7 +113,7 @@ def stage2_eval_loss(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels)
 
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def stage_2_batch_eval(params, other_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
+def stage_2_batch_eval(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
     loss = stage2_eval_loss(
         params,
         src,
@@ -144,7 +144,7 @@ lm_head = params['embedding']['embedding'].T
 #stage 1
 key = rand.PRNGKey(42)
 
-def eval(replicated_params, replicated_other_params):
+def eval(replicated_params):
     eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset(
         'dev/newsdev2017.zh', 'dev/newsdev2017.en')
     n_batches = len(eval_input_ids) // batch_size
@@ -159,7 +159,7 @@ def eval(replicated_params, replicated_other_params):
 
         mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
                                                          mask_dec_1d[i * batch_size:(i + 1) * batch_size])
-        loss = stage_2_batch_eval(replicated_params, replicated_other_params, src, dst, mask_enc, mask_dec,
+        loss = stage_2_batch_eval(replicated_params, src, dst, mask_enc, mask_dec,
                                   mask_dec_enc, labels)
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
