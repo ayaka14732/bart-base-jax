@@ -199,7 +199,7 @@ n_sents = len(input_ids)
 # params = model.params
 optimizer = optax.lamb(learning_rate=learning_rate)
 opt_state = optimizer.init(replicated_params)
-opt_state = jax.tree_map(lambda x: np.array([x] * n_devices), opt_state)
+# opt_state = jax.tree_map(lambda x: np.array([x] * n_devices), opt_state)
 opt_update = optimizer.update
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
