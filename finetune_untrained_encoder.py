@@ -20,7 +20,7 @@ import json
 
 n_epoch = 1
 batch_size = 48
-learning_rate = 0.001
+learning_rate = 0.01
 max_length = 512
 n_devices = jax.local_device_count()
 
@@ -183,10 +183,10 @@ def save_ckpt():
     with open('bart_stage1_fully_random_ckpt.dat', 'wb') as f:
         f.write(serialized_params)
 
-def lrs(batch):
-    low = math.log2(1e-4)
-    high = math.log2(1)
-    return 2**(low+(high-low)*batch/300)
+# def lrs(batch):
+#     low = math.log2(1e-4)
+#     high = math.log2(1)
+#     return 2**(low+(high-low)*batch/300)
 
 
 lm_head = en_params['embedding']['embedding'].T
@@ -211,7 +211,7 @@ n_sents = len(input_ids)
 optimizer = optax.adam(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
-losses = []
+# losses = []
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
 for _ in tqdm_epoch:
@@ -239,20 +239,20 @@ for _ in tqdm_epoch:
         grads, loss = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
 
         grads = jax.device_get(jax.tree_map(lambda x: x[0], grads))
-        optimizer = optax.adam(learning_rate=lrs(i))
+        # optimizer = optax.adam(learning_rate=lrs(i))
         updates, opt_state = optimizer.update(grads, opt_state, params)
         params = optax.apply_updates(params, updates)
         replicated_params = jax.tree_map(lambda x: np.array([x] * n_devices), params)
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
-        losses.append(batch_loss)
+        # losses.append(batch_loss)
 
         epoch_loss += batch_loss
         if i%4==0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
-    json.dump(losses,open('loss_log','w+'))
-    exit(0)
+    # json.dump(losses,open('loss_log','w+'))
+    # exit(0)
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 

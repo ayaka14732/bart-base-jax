@@ -48,9 +48,9 @@ def process_one_dataset(dataset_ch, dataset_en):
                 if len(linech) <= max_length_ch - 2 and len(lineen.split()) <= max_length_en - 2:  # skip long sentences
                     zh.append(linech)
                     en.append(lineen)
-                    count+=1
-                    if count==14400:
-                        break
+                    # count+=1
+                    # if count==14400:
+                    #     break
 
     with Pool() as p:
         xs = list(tqdm(p.imap(encode_en_batch, chunks(en, chunksize)), total=math.ceil(len(en) / chunksize)))
