@@ -226,7 +226,7 @@ params = jax.device_get(jax.tree_map(lambda x: x[0], replicated_params))
 
 from flax.serialization import msgpack_serialize
 serialized_params = msgpack_serialize(params)
-with open('bart_stage2_ckpt.dat', 'wb') as f:
+with open('bart_stage2_random_enc_ckpt.dat', 'wb') as f:
     f.write(serialized_params)
 
 
