@@ -20,7 +20,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 
 n_epoch = 1
 batch_size = 48
-learning_rate = 0.01
+learning_rate = 0.005
 max_length = 512
 devices = jax.local_devices()
 n_devices = jax.local_device_count()
@@ -148,7 +148,7 @@ key = rand.PRNGKey(42)
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en',4800)
 # input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
 # decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 
@@ -162,9 +162,11 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+#  optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+#                                              optimizer)
 optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
-                                             optimizer)
+                                             optax.sgd(learning_rate=learning_rate))
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
