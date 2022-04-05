@@ -10,10 +10,10 @@ jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 def load_params():
     from flax.serialization import msgpack_restore
-    # with open('bart_params.dat', 'rb') as f:
-    #     b = f.read()
-    with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
+    with open('bart_params.dat', 'rb') as f:
         b = f.read()
+    # with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
+    #     b = f.read()
     params = msgpack_restore(b)
     params = jax.tree_map(np.asarray, params)  # NumPy array to JAX array
     return params
@@ -27,7 +27,7 @@ tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 # sentences = ['Can you see the beautiful flowers <mask> alongside the track?']
 
-sentences = ['Can you see the beautiful flowers blooming alongside the track?']
+sentences = ['<s> Can you see the beautiful flowers blooming alongside the track?']
 
 batch = tokenizer(sentences, return_tensors='jax',padding=True)
 
