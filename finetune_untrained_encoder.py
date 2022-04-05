@@ -232,9 +232,7 @@ for _ in tqdm_epoch:
         dst = split(decoder_input_ids[batch])
         labels = split(onp.hstack((decoder_input_ids[batch,1:], np.ones((len(batch), 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
 
-        mask_enc = split(np.einsum('bi,bj->bij', mask_enc_1d[batch], mask_enc_1d[batch])[:, None])
-        mask_dec = split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_dec_1d[batch]))[:, None])
-        mask_dec_enc = split(np.einsum('bi,bj->bij', mask_dec_1d[batch], mask_enc_1d[batch])[:, None])
+        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[batch], mask_dec_1d[batch])
 
         grads, loss = stage_1_batch_update(replicated_params,replicated_other_params,src,dst,mask_enc, mask_dec, mask_dec_enc, labels)
 
