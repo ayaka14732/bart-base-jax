@@ -31,7 +31,7 @@ def cross_entropy_loss(logits, labels, mask):
     softmax_probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
     exp_loss = np.take_along_axis(softmax_probs, labels[..., None], axis=-1)
     loss = -np.log(exp_loss)
-    loss = loss * mask
+    # loss = loss * mask
     return np.sum(loss)
 
 # 1. load params
@@ -133,7 +133,7 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     return mask_enc, mask_dec, mask_dec_enc
 
 def evaluate(replicated_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en', 9600)
     n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
@@ -151,7 +151,7 @@ def evaluate(replicated_params):
     epoch_loss /= n_batches
     return epoch_loss
 
-replicated_params = jax.device_put_replicated(params, devices)
+# replicated_params = jax.device_put_replicated(params, devices)
 replicated_opt_state = jax.device_put_replicated(opt_state, devices)
 
 def save_ckpt():
