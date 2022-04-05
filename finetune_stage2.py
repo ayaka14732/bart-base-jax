@@ -54,7 +54,7 @@ ch_tokenizer = BertTokenizer.from_pretrained("fnlp/bart-base-chinese")
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 from flax.serialization import msgpack_restore
-with open('bart_stage1_ckpt.dat', 'rb') as f:
+with open('bart_stage1_fully_random_ckpt.dat', 'rb') as f:
     b = f.read()
 params = msgpack_restore(b)
 params = jax.tree_map(np.asarray, params)
@@ -168,7 +168,10 @@ def eval(replicated_params, replicated_other_params):
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+# input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en')
+
+
 # input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
 # decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
 
