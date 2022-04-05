@@ -162,7 +162,9 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+optimizer = gradient_transform = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+                                             optax.sgd(learning_rate=learning_rate))
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
