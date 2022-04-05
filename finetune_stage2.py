@@ -19,7 +19,7 @@ from dataloader import process_one_dataset
 #4. fine-tune all params with decayed lr
 
 n_epoch = 1
-batch_size = 8
+batch_size = 16
 learning_rate = 0.001
 max_length = 512
 n_devices = jax.local_device_count()
@@ -235,8 +235,8 @@ for _ in tqdm_epoch:
 
         batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
         epoch_loss += batch_loss
-
-        tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
+        if i % 20 == 0:
+            tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
     epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
