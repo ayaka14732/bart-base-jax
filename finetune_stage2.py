@@ -19,7 +19,7 @@ from dataloader import process_one_dataset
 #4. fine-tune all params with decayed lr
 
 n_epoch = 1
-batch_size = 8
+batch_size = 16
 learning_rate = 0.005
 max_length = 512
 n_devices = jax.local_device_count()
