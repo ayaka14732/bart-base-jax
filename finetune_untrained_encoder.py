@@ -79,11 +79,11 @@ optimizer_scheme = {
     'freeze': optax.set_to_zero(),
 }
 
-optimizer = optax.multi_transform(optimizer_scheme, param_labels)
-# optimizer = optax.chain(
-#     optax.adaptive_grad_clip(0.1, eps=0.001),
-#     optax.sgd(learning_rate=learning_rate)
-# )
+# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+optimizer = optax.chain(
+    optax.adaptive_grad_clip(0.1, eps=0.001),
+    optax.sgd(learning_rate=learning_rate)
+)
 opt_state = optimizer.init(params)
 
 @jax.jit
@@ -133,7 +133,7 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     return mask_enc, mask_dec, mask_dec_enc
 
 def evaluate(replicated_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en', 9600)
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
     n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
