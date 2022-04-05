@@ -19,7 +19,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 #3. fine-tune params including linear, first layer attention
 #4. fine-tune all params with decayed lr
 
-n_epoch = 1
+n_epoch = 2
 batch_size = 48
 learning_rate = 0.01
 max_length = 512
@@ -39,23 +39,25 @@ def cross_entropy_loss(logits, labels, mask):
 ch_tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-params_ch = jax.tree_map(np.asarray, load_params('ch_trained_emb.dat'))
-params_en = jax.tree_map(np.asarray, load_params('bart_params.dat'))
+# params_ch = jax.tree_map(np.asarray, load_params('ch_trained_emb.dat'))
+# params_en = jax.tree_map(np.asarray, load_params('bart_params.dat'))
 
-params = {
-    'ch': {
-        'embedding': params_ch['embedding'],
-        'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
-        'encoder_embed_positions': params_ch['encoder_embed_positions'],
-        'encoder_layers': params_ch['encoder_layers'],
-    },
-    'embedding': params_en['embedding'],
-    'decoder_embed_positions': params_en['decoder_embed_positions'],
-    'encoder_embed_layer_norm': params_en['encoder_embed_layer_norm'],
-    'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
-    'encoder_layers': params_en['encoder_layers'],
-    'decoder_layers': params_en['decoder_layers'],
-}
+# params = {
+#     'ch': {
+#         'embedding': params_ch['embedding'],
+#         'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
+#         'encoder_embed_positions': params_ch['encoder_embed_positions'],
+#         'encoder_layers': params_ch['encoder_layers'],
+#     },
+#     'embedding': params_en['embedding'],
+#     'decoder_embed_positions': params_en['decoder_embed_positions'],
+#     'encoder_embed_layer_norm': params_en['encoder_embed_layer_norm'],
+#     'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
+#     'encoder_layers': params_en['encoder_layers'],
+#     'decoder_layers': params_en['decoder_layers'],
+# }
+
+params = jax.tree_map(np.asarray, load_params('bart_stage1_keep_emb_ckpt.dat'))
 
 param_labels = {
     'ch': {
