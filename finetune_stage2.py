@@ -22,7 +22,8 @@ n_epoch = 1
 batch_size = 8
 learning_rate = 0.01
 max_length = 512
-n_devices = jax.local_device_count()
+# n_devices = jax.local_device_count()
+n_devices = 1
 
 def cross_entropy_loss(logits, labels):
     exp_logits = np.exp(logits)
