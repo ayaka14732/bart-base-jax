@@ -138,7 +138,7 @@ def save_ckpt():
     params = jax.tree_map(lambda x: x[0], replicated_params)
     from flax.serialization import msgpack_serialize
     serialized_params = msgpack_serialize(params)
-    with open('bart_stage1_keep_emb_ckpt.dat', 'wb') as f:
+    with open('bart_stage1_3_random_layer_ckpt.dat', 'wb') as f:
         f.write(serialized_params)
 
 
