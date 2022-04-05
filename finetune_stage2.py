@@ -20,7 +20,7 @@ from dataloader import process_one_dataset
 
 n_epoch = 1
 batch_size = 8
-learning_rate = 0.01
+learning_rate = 0.005
 max_length = 512
 n_devices = jax.local_device_count()
 # n_devices = 1
@@ -198,7 +198,7 @@ n_sents = len(input_ids)
 
 
 # params = model.params
-optimizer = gradient_transform = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
                                              optax.sgd(learning_rate=learning_rate))
 opt_state = optimizer.init(replicated_params)
 opt_update = optimizer.update
