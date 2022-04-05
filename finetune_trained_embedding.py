@@ -158,15 +158,16 @@ input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wi
 n_sents = len(input_ids)
 
 optimizer_scheme = {
-    'train': optax.adam(learning_rate=learning_rate),
+    'train': optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+                                             optax.sgd(learning_rate=learning_rate)),
     'freeze': optax.set_to_zero(),
 }
 
-# optimizer = optax.multi_transform(optimizer_scheme, param_labels)
-#  optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+# optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
 #                                              optimizer)
-optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
-                                             optax.sgd(learning_rate=learning_rate))
+# optimizer = optax.chain(optax.adaptive_grad_clip(0.1, eps=0.001),
+#                                              optax.sgd(learning_rate=learning_rate))
 opt_state = optimizer.init(params)
 
 tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
