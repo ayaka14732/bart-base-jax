@@ -36,7 +36,7 @@ tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 # mask_enc_1d = batch.attention_mask.astype(np.bool_)
 
 from dataloader import process_one_dataset
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en',1)
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en',2)
 src = np.hstack((decoder_input_ids[:,1:],[[1*tokenizer.pad_token_id]]*len(input_ids)))
 dst = decoder_input_ids
 
