@@ -161,16 +161,15 @@ replicated_opt_state = jax.device_put_replicated(opt_state, devices)
 
 def save_ckpt():
     params = jax.tree_map(lambda x: x[0], replicated_params)
-    filename = 'adam_0.00001_bs160.dat'
+    filename = f'{wandb.run.name}.dat'
     save_params(params, filename)
-    print(f'Checkpoint saved to {filename}')
 
 input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
 
 key = rand.PRNGKey(42)
 n_sents = len(input_ids)
 
-for _ in trange(1, n_epoch + 1, desc='Epoch'):
+for _ in trange(1, n_epoch + 1, desc='Epoch', smoothing=1.):
     epoch_loss = 0.
     eval_loss = math.inf
 
@@ -178,7 +177,7 @@ for _ in trange(1, n_epoch + 1, desc='Epoch'):
     key, subkey = rand.split(key)
     shuffled_indices = rand.permutation(subkey, n_sents)
 
-    for i in trange(n_batches, desc='Batch', leave=False):
+    for i in trange(n_batches, desc='Batch', leave=False, smoothing=1.):
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
         src = input_ids[batch]
@@ -205,16 +204,9 @@ for _ in trange(1, n_epoch + 1, desc='Epoch'):
         replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
         batch_loss = replicated_loss[0].item()
-
-        if np.isnan(batch_loss):
-            print('Loss is NaN, terminating...')
-            exit(-1)
-
+        assert not np.isnan(batch_loss)
+        wandb.log({'batch loss': batch_loss})
         epoch_loss += batch_loss
-
-        wandb.log({
-            'batch loss': batch_loss,
-        })
 
         if i % 2000 == 1999:
             new_eval_loss = evaluate(replicated_params)
@@ -225,6 +217,6 @@ for _ in trange(1, n_epoch + 1, desc='Epoch'):
             save_ckpt()
 
     epoch_loss /= n_batches
-    print('epoch loss', f'{epoch_loss:.4f}')
+    wandb.log({'epoch loss': epoch_loss})
 
     save_ckpt()
