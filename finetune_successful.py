@@ -7,6 +7,7 @@ import numpy as onp
 import optax
 from transformers import BartTokenizer
 from tqdm import trange
+import wandb
 
 from lib.load_dataset import load_dataset
 from lib.param_utils.load_params import load_params
@@ -19,11 +20,22 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 # 3. fine-tune params including linear, first layer attention
 # 4. fine-tune all params with decayed lr
 
-n_epoch = 2
-batch_size = 160
-learning_rate = 0.00001
 devices = jax.local_devices()
 n_devices = jax.local_device_count()
+assert n_devices == 8
+
+wandb.init(project='bart-nmt-zh-en')
+
+n_epoch = 2
+batch_size = 17 * n_devices
+learning_rate = 0.00001
+
+wandb.config = {
+    'n_epoch': n_epoch,
+    'batch_size': batch_size,
+    'learning_rate': 0.00001,
+    'extra_description': 'using adam optimizer; trained on wikimatrix21',
+}
 
 def cross_entropy_loss(logits, labels, mask):
     exp_logits = np.exp(logits)
@@ -158,8 +170,7 @@ input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatri
 key = rand.PRNGKey(42)
 n_sents = len(input_ids)
 
-tqdm_epoch = trange(1, n_epoch + 1, desc='Epoch')
-for _ in tqdm_epoch:
+for _ in trange(1, n_epoch + 1, desc='Epoch'):
     epoch_loss = 0.
     eval_loss = math.inf
 
@@ -167,9 +178,7 @@ for _ in tqdm_epoch:
     key, subkey = rand.split(key)
     shuffled_indices = rand.permutation(subkey, n_sents)
 
-    tqdm_batch = trange(n_batches, desc='Batch', leave=False)
-
-    for i in tqdm_batch:
+    for i in trange(n_batches, desc='Batch', leave=False):
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
         src = input_ids[batch]
@@ -202,8 +211,10 @@ for _ in tqdm_epoch:
             exit(-1)
 
         epoch_loss += batch_loss
-        if i % 4 == 0:
-            tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
+
+        wandb.log({
+            'batch loss': batch_loss,
+        })
 
         if i % 2000 == 1999:
             new_eval_loss = evaluate(replicated_params)
@@ -214,6 +225,6 @@ for _ in tqdm_epoch:
             save_ckpt()
 
     epoch_loss /= n_batches
-    tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
+    print('epoch loss', f'{epoch_loss:.4f}')
 
     save_ckpt()
