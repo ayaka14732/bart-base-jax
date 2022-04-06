@@ -201,10 +201,6 @@ for _ in tqdm_epoch:
 
         replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
-        # view TPU usage with: go tool pprof -tags /tmp/memory.prof
-        # cannot invoke by subprocess! See https://github.com/google/jax/issues/9642
-        jax.profiler.save_device_memory_profile('/tmp/memory.prof')
-
         batch_loss = replicated_loss[0].item()
 
         if np.isnan(batch_loss):
