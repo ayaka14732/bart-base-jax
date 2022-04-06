@@ -10,6 +10,8 @@ from lib.fwd_layer_norm import fwd_layer_norm
 from lib.fwd_transformer_encoder import fwd_transformer_encoder
 from lib.generator import Generator
 
+jax.config.update('jax_platform_name', 'cpu')
+
 assert len(sys.argv) == 2, 'Please provide the path to model checkpoint (*.dat) as a command line argument'
 
 def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
@@ -52,11 +54,8 @@ sentences = [
     '果然步要晚上出来跑，大下午的跑就是找暑中。',
     '对，而且这航班还得放包在座椅底下，腿更没空间活动。',
     '整个出入境过程只用过登机牌，护照，居留卡都没人看。',
-    '他们可以再次利用三氧化二铁了。',
     '全波兰的报纸和杂志中约有半数是在华沙印刷的。',
     '这个数量只足以运行一间塔吉克发电厂。',
-    '各级党委政府要高度重视优秀返乡农民工这一群体，通过综合措施，把他们打造成一支留得住、能战斗、带不走的工作队、生力军，为农村脱贫奔小康和发展振兴提供强有力的组织保障和人才支撑。',
-    '因为遭遇疫情，今年的大学毕业生是很特殊的一届，7月11日晚，bilibili夏日毕业歌会为毕业生们带来一场特殊的线上直播演出，老狼、朴树、李宇春、毛不易等音乐人为应届毕业生送上歌声和祝福。',
 ]
 
 # with open(expanduser('~/dataset/processed/Eval/sources/newstest2021.zh-en.src.zh')) as f:
@@ -79,4 +78,5 @@ for translated_sentence in decoded_sentences:
 
 # with open('test_output2.txt', 'w') as f:
 #     for translated_sentence in decoded_sentences:
+#         print(translated_sentence)
 #         print(translated_sentence, file=f)
