@@ -19,7 +19,7 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 # 3. fine-tune params including linear, first layer attention
 # 4. fine-tune all params with decayed lr
 
-n_epoch = 1
+n_epoch = 2
 batch_size = 48
 learning_rate = 0.01
 max_length = 512
@@ -59,7 +59,7 @@ param_labels = {
     'ch': {
         'embedding': 'freeze',
         'encoder_embed_positions': 'train',
-        'encoder_embed_layer_norm': 'freeze',
+        'encoder_embed_layer_norm': 'train',
         'encoder_layers': 'train',
     },
     'encoder_layers': 'freeze',
@@ -155,6 +155,7 @@ replicated_opt_state = jax.device_put_replicated(opt_state, devices)
 def save_ckpt():
     params = jax.tree_map(lambda x: x[0], replicated_params)
     save_params(params, 'bart_stage1_keep_emb_ckpt.dat')
+    print('Checkpoint saved to bart_stage1_keep_emb_ckpt.dat')
 
 input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
 
@@ -170,7 +171,7 @@ for _ in tqdm_epoch:
     key, subkey = rand.split(key)
     shuffled_indices = rand.permutation(subkey, n_sents)
 
-    tqdm_batch = trange(n_sents, desc='Batch', leave=False)
+    tqdm_batch = trange(n_batches, desc='Batch', leave=False)
 
     for i in tqdm_batch:
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
@@ -199,6 +200,11 @@ for _ in tqdm_epoch:
         replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
         batch_loss = replicated_loss[0].item()
+
+        if np.isnan(batch_loss):
+            print('Loss is NaN, terminating...')
+            exit(-1)
+
         epoch_loss += batch_loss
         if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
@@ -211,7 +217,7 @@ for _ in tqdm_epoch:
             eval_loss = new_eval_loss
             save_ckpt()
 
-    epoch_loss /= n_sents
+    epoch_loss /= n_batches
     tqdm_epoch.set_postfix({'epoch loss': f'{epoch_loss:.4f}'})
 
     save_ckpt()
