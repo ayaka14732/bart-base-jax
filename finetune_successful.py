@@ -20,8 +20,8 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 # 4. fine-tune all params with decayed lr
 
 n_epoch = 2
-batch_size = 48
-learning_rate = 0.01
+batch_size = 56
+learning_rate = 0.00005
 max_length = 512
 devices = jax.local_devices()
 n_devices = jax.local_device_count()
@@ -72,14 +72,8 @@ param_labels = {
 }
 
 optimizer_scheme = {
-    'train': optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=learning_rate),
-    ),
-    'freeze': optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=learning_rate * 0.1),
-    ),
+    'train': optax.lamb(learning_rate=learning_rate),
+    'freeze': optax.lamb(learning_rate=learning_rate * 0.1),
 }
 
 optimizer = optax.multi_transform(optimizer_scheme, param_labels)
@@ -156,8 +150,9 @@ replicated_opt_state = jax.device_put_replicated(opt_state, devices)
 
 def save_ckpt():
     params = jax.tree_map(lambda x: x[0], replicated_params)
-    save_params(params, 'bart_stage1_keep_emb_ckpt.dat')
-    print('Checkpoint saved to bart_stage1_keep_emb_ckpt.dat')
+    filename = 'lamb_0.00005_bs56.dat'
+    save_params(params, filename)
+    print(f'Checkpoint saved to {filename}')
 
 input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
 
