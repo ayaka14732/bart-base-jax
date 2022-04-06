@@ -24,18 +24,16 @@ devices = jax.local_devices()
 n_devices = jax.local_device_count()
 assert n_devices == 8
 
-wandb.init(project='bart-nmt-zh-en')
-
 n_epoch = 2
 batch_size = 17 * n_devices
 learning_rate = 0.00001
 
-wandb.config = {
+wandb.init(project='bart-nmt-zh-en', config={
     'n_epoch': n_epoch,
     'batch_size': batch_size,
     'learning_rate': 0.00001,
     'extra_description': 'using adam optimizer; trained on wikimatrix21',
-}
+})
 
 def cross_entropy_loss(logits, labels, mask):
     exp_logits = np.exp(logits)
