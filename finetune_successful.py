@@ -38,22 +38,24 @@ def cross_entropy_loss(logits, labels, mask):
 
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-params_ch = jax.tree_map(np.asarray, load_params('params_bart_base_zh.dat'))
-params_en = jax.tree_map(np.asarray, load_params('params_bart_base_en.dat'))
+def make_params():
+    params_ch = jax.tree_map(np.asarray, load_params('params_bart_base_zh.dat'))
+    params_en = jax.tree_map(np.asarray, load_params('params_bart_base_en.dat'))
+    return {
+        'ch': {
+            'embedding': params_ch['embedding'],
+            'encoder_embed_positions': params_ch['encoder_embed_positions'],
+            'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
+            'encoder_layers': params_ch['encoder_layers'],
+        },
+        'embedding': params_en['embedding'],
+        'decoder_embed_positions': params_en['decoder_embed_positions'],
+        'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
+        'encoder_layers': params_en['encoder_layers'],
+        'decoder_layers': params_en['decoder_layers'],
+    }
 
-params = {
-    'ch': {
-        'embedding': params_ch['embedding'],
-        'encoder_embed_positions': params_ch['encoder_embed_positions'],
-        'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
-        'encoder_layers': params_ch['encoder_layers'],
-    },
-    'embedding': params_en['embedding'],
-    'decoder_embed_positions': params_en['decoder_embed_positions'],
-    'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
-    'encoder_layers': params_en['encoder_layers'],
-    'decoder_layers': params_en['decoder_layers'],
-}
+params = make_params()
 
 param_labels = {
     'ch': {
@@ -199,6 +201,10 @@ for _ in tqdm_epoch:
 
         replicated_params, replicated_opt_state, replicated_loss = stage_1_batch_update(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, replicated_opt_state, dropout_key=subkey)
 
+        # view TPU usage with: go tool pprof -tags /tmp/memory.prof
+        # cannot invoke by subprocess! See https://github.com/google/jax/issues/9642
+        jax.profiler.save_device_memory_profile('/tmp/memory.prof')
+
         batch_loss = replicated_loss[0].item()
 
         if np.isnan(batch_loss):
@@ -209,7 +215,7 @@ for _ in tqdm_epoch:
         if i % 4 == 0:
             tqdm_batch.set_postfix({'batch loss': f'{batch_loss:.4f}'})
 
-        if i % 2000==1999:
+        if i % 2000 == 1999:
             new_eval_loss = evaluate(replicated_params)
             if new_eval_loss > eval_loss:
                 break
