@@ -10,8 +10,6 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
 
-np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 ch_tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 
