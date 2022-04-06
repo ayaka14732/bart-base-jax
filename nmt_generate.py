@@ -10,7 +10,7 @@ from lib.fwd_transformer_encoder import fwd_transformer_encoder
 from lib.generator import Generator
 
 def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
-    # params ch
+    # pparams_ch
     params_ch = params['ch']
     ch_embedding: dict = params_ch['embedding']  # embedding
     ch_encoder_embed_positions: np.ndarray = params_ch['encoder_embed_positions']  # array
@@ -18,9 +18,6 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
     ch_encoder_layers: list = params_ch['encoder_layers']  # list of transformer encoder
 
     # params
-    # embedding: dict = params['embedding']  # embedding
-    # encoder_embed_positions: np.ndarray = params['encoder_embed_positions']  # array
-    # encoder_embed_layer_norm: dict = params['encoder_embed_layer_norm']  # layer norm
     encoder_layers: list = params['encoder_layers']  # list of transformer encoder
 
     _, width_enc = src.shape
@@ -35,7 +32,6 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
         src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
 
     # encoder
-    # src = fwd_layer_norm(encoder_embed_layer_norm, src)
     for encoder_layer in encoder_layers:
         src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
 
