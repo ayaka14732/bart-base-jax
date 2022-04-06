@@ -7,8 +7,8 @@ from transformers import BertTokenizer, BartTokenizer
 from tqdm import trange
 import optax
 import functools
-from dataloader import process_one_dataset
 
+from lib.load_dataset import load_dataset
 from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
@@ -117,7 +117,7 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     return mask_enc, mask_dec, mask_dec_enc
 
 def evaluate(replicated_params):
-    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = process_one_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
+    eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = load_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
     n_batches = len(eval_input_ids) // batch_size
     tqdm_eval_batch = trange(n_batches, desc='Batch', leave=False)
     epoch_loss = 0.
@@ -144,7 +144,7 @@ def save_ckpt():
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikititles.zh', 'wikititles.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikititles.zh', 'wikititles.en')
 key = rand.PRNGKey(42)
 n_sents = len(input_ids)
 
@@ -207,9 +207,9 @@ for _ in tqdm_epoch:
     save_ckpt()
 
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('newscom21.zh', 'newscom21.en')
-# input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
-# decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('newscom21.zh', 'newscom21.en')
+# input_ids, mask_enc_1d = load_dataset('wikimatrix21.zh','zh')
+# decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.en', 'en')
 
 
 key = rand.PRNGKey(42)

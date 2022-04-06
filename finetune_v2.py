@@ -1,16 +1,15 @@
 import jax
-import jax.nn as nn
 import jax.numpy as np
 import jax.random as rand
 import math
 import numpy as onp
-from transformers import BertTokenizer, BartTokenizer, BartForConditionalGeneration, Text2TextGenerationPipeline
+from transformers import BertTokenizer, BartTokenizer
 from tqdm import trange
 import optax
 import functools
+
+from lib.load_dataset import load_dataset
 from lib.fwd_nmt_transformer_linear import fwd_nmt_transformer
-from dataloader import process_one_dataset
-import copy
 
 # Procedure:
 # 1. load a pretrained BART-base-chinese encoder
@@ -187,9 +186,9 @@ key = rand.PRNGKey(42)
 
 # input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d, labels = load_dataset('dataset.npz')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.zh', 'wikimatrix21.en')
-# input_ids, mask_enc_1d = process_one_dataset('wikimatrix21.zh','zh')
-# decoder_input_ids, mask_dec_1d = process_one_dataset('wikimatrix21.en', 'en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+# input_ids, mask_enc_1d = load_dataset('wikimatrix21.zh','zh')
+# decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.en', 'en')
 
 
 # labels = onp.hstack((decoder_input_ids[:,1:], np.ones((len(input_ids), 1), dtype=np.int32) * en_tokenizer.pad_token_id))
