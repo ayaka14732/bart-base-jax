@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as np
+import sys
 from transformers import BartTokenizer, BertTokenizer
 from os.path import expanduser
 
@@ -8,6 +9,8 @@ from lib.fwd_embedding import fwd_embedding
 from lib.fwd_layer_norm import fwd_layer_norm
 from lib.fwd_transformer_encoder import fwd_transformer_encoder
 from lib.generator import Generator
+
+assert len(sys.argv) == 2, 'Please provide the path to model checkpoint (*.dat) as a command line argument'
 
 def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
     # pparams_ch
@@ -40,7 +43,7 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
 tokenizer_zh = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 tokenizer_en = BartTokenizer.from_pretrained('facebook/bart-base')
 
-params = load_params('bart_stage1_keep_emb_ckpt.dat')
+params = load_params(sys.argv[1])
 params = jax.tree_map(np.asarray, params)
 generator = Generator(params)
 

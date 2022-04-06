@@ -20,9 +20,8 @@ from lib.fwd_nmt_transformer import fwd_nmt_transformer
 # 4. fine-tune all params with decayed lr
 
 n_epoch = 2
-batch_size = 56
-learning_rate = 0.00005
-max_length = 512
+batch_size = 160
+learning_rate = 0.00001
 devices = jax.local_devices()
 n_devices = jax.local_device_count()
 
@@ -72,8 +71,8 @@ param_labels = {
 }
 
 optimizer_scheme = {
-    'train': optax.lamb(learning_rate=learning_rate),
-    'freeze': optax.lamb(learning_rate=learning_rate * 0.1),
+    'train': optax.adam(learning_rate=learning_rate),
+    'freeze': optax.adam(learning_rate=learning_rate * 0.1),
 }
 
 optimizer = optax.multi_transform(optimizer_scheme, param_labels)
@@ -150,7 +149,7 @@ replicated_opt_state = jax.device_put_replicated(opt_state, devices)
 
 def save_ckpt():
     params = jax.tree_map(lambda x: x[0], replicated_params)
-    filename = 'lamb_0.00005_bs56.dat'
+    filename = 'adam_0.00001_bs160.dat'
     save_params(params, filename)
     print(f'Checkpoint saved to {filename}')
 
