@@ -46,8 +46,10 @@ generator = Generator(params)
 
 sentences = [
     '毕业之后，我的兴趣是在游泳池驾驶飞机。',
-    '三氧化二铁能以任何比例结合使用。',
-    '犹太社区组织几乎在一夜之间消失。',
+    '果然步要晚上出来跑，大下午的跑就是找暑中。',
+    '对，而且这航班还得放包在座椅底下，腿更没空间活动。',
+    '整个出入境过程只用过登机牌，护照，居留卡都没人看。',
+    '他们可以再次利用三氧化二铁了。',
     '全波兰的报纸和杂志中约有半数是在华沙印刷的。',
     '这个数量只足以运行一间塔吉克发电厂。',
     '各级党委政府要高度重视优秀返乡农民工这一群体，通过综合措施，把他们打造成一支留得住、能战斗、带不走的工作队、生力军，为农村脱贫奔小康和发展振兴提供强有力的组织保障和人才支撑。',
@@ -59,8 +61,6 @@ sentences = [
 #         line = line.rstrip('\n')
 #         sentences.append(line)
 
-# sentences = sentences[:40]
-
 batch = tokenizer_zh(sentences, padding=True, return_tensors='jax')
 
 src = batch.input_ids
@@ -68,13 +68,11 @@ mask_enc_1d = batch.attention_mask.astype(np.bool_)
 mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
 
 encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
-generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=28)
+generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5)
 decoded_sentences = tokenizer_en.batch_decode(generate_ids, skip_special_tokens=True)
 
 for translated_sentence in decoded_sentences:
     print(translated_sentence)
-
-# translated_sentences = list(tqdm(map(translate_one_sentence, sentences), total=len(sentences)))
 
 # with open('test_output2.txt', 'w') as f:
 #     for translated_sentence in decoded_sentences:
