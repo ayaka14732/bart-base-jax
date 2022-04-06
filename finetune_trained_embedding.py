@@ -36,7 +36,6 @@ def cross_entropy_loss(logits, labels, mask):
 
 # 1. load params
 
-ch_tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 # params_ch = jax.tree_map(np.asarray, load_params('ch_trained_emb.dat'))
