@@ -31,7 +31,7 @@ learning_rate = 0.00001
 wandb.init(project='bart-nmt-zh-en', config={
     'n_epoch': n_epoch,
     'batch_size': batch_size,
-    'learning_rate': 0.00001,
+    'learning_rate': learning_rate,
     'extra_description': 'using adam optimizer; trained on wikimatrix21',
 })
 
