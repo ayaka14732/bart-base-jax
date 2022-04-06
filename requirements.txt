@@ -1,5 +1,6 @@
 autopep8
 tqdm
+wandb==0.12.12
 datasets==2.0.0
 torch==1.11.0
 jax==0.3.4

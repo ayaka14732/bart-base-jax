@@ -1,5 +1,4 @@
 __pycache__
 *.dat
 .idea
-.idea/workspace.xml
-*.xml
+/wandb
