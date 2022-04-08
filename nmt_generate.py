@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as np
+import math
 import sys
+from tqdm import trange
 from transformers import BartTokenizer, BertTokenizer
 from os.path import expanduser
 
@@ -10,7 +12,7 @@ from lib.fwd_layer_norm import fwd_layer_norm
 from lib.fwd_transformer_encoder import fwd_transformer_encoder
 from lib.generator import Generator
 
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 
 assert len(sys.argv) == 2, 'Please provide the path to model checkpoint (*.dat) as a command line argument'
 
@@ -63,15 +65,37 @@ sentences = [
 #         line = line.rstrip('\n')
 #         sentences.append(line)
 
-batch = tokenizer_zh(sentences, padding=True, return_tensors='jax')
+batch_size = 20
+num_sents = len(sentences)
+num_batchs = math.ceil(num_sents / batch_size)
 
-src = batch.input_ids
-mask_enc_1d = batch.attention_mask.astype(np.bool_)
-mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+# group sentences by similar lengths for the best performance
+sorted_idxs_and_sentences = sorted(enumerate(sentences), key=lambda sent_idx: -len(sent_idx[1]))
 
-encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
-generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=100000)
-decoded_sentences = tokenizer_en.batch_decode(generate_ids, skip_special_tokens=True)
+decoded_sentences = [None] * num_sents
+
+for i in trange(num_batchs):
+    batched_sorted_idxs_and_sentences = sorted_idxs_and_sentences[i*batch_size:(i+1)*batch_size]
+
+    batched_idxs = []
+    batched_sentences = []
+
+    for batched_idx, batched_sentence in batched_sorted_idxs_and_sentences:
+        batched_idxs.append(batched_idx)
+        batched_sentences.append(batched_sentence)
+
+    batch = tokenizer_zh(batched_sentences, padding=True, return_tensors='jax')
+
+    src = batch.input_ids
+    mask_enc_1d = batch.attention_mask.astype(np.bool_)
+    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+
+    encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
+    generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=100000)
+    batched_decoded_sentences = tokenizer_en.batch_decode(generate_ids, skip_special_tokens=True)
+
+    for idx, decoded_sentence in zip(batched_idxs, batched_decoded_sentences):
+        decoded_sentences[idx] = decoded_sentence
 
 for translated_sentence in decoded_sentences:
     print(translated_sentence)
