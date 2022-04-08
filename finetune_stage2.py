@@ -26,15 +26,15 @@ devices = jax.local_devices()
 n_devices = jax.local_device_count()
 assert n_devices == 8
 
-n_epoch = 1
+n_epoch = 2
 batch_size = 16 * n_devices  # 28 * n_devices
-learning_rate = 0.023
+learning_rate = 0.005
 
 wandb.init(project='bart-nmt-zh-en-stage-2', config={
     'n_epoch': n_epoch,
     'batch_size': batch_size,
     'learning_rate': learning_rate,
-    'extra_description': 'using sgd optimizer; trained on wikimatrix21; 13th revision of freezing',
+    'extra_description': 'using sgd optimizer; trained on newscom21; 13th revision of freezing',
 })
 
 def cross_entropy_loss(logits, labels, mask):
