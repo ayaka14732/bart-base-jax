@@ -43,219 +43,51 @@ In addition to the regular implementation, I also implemented the model [in a si
 
 This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer). Nevertheless, the code is written entirely on my own.
 
+## 2. Environment Setip
+
+Setup on Cloud TPU
+
+1\. Create a Cloud TPU VM v3-8 with TPU software version v2-nightly20210914
+
+2\. Install Python 3.10
+
+3\. Create virtualenv
+
+4\. Install JAX with TPU support
+
+```sh
+pip install -U pip
+pip install -U wheel
+pip install "jax[tpu]==0.3.5" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+```
+
+5\. Install TPU version of Tensorflow
+
+```sh
+wget https://gist.github.com/ayaka14732/a22234f394d60a28545f76cff23397c0/raw/e6c6ffea91b45a146189b52fea7155b1305bf78e/tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl.0
+wget https://gist.github.com/ayaka14732/a22234f394d60a28545f76cff23397c0/raw/e6c6ffea91b45a146189b52fea7155b1305bf78e/tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl.1
+cat tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl.0 tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl.1 > tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl
+pip install tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl
+rm -f tensorflow-2.8.0-cp310-cp310-linux_x86_64.whl*
+```
+
+6\. Install other required Python packages
+
+```sh
+pip install -r requirements.txt
+```
+
+
 ## 2. Architecture
 
-### 2.1. Dropout function
-
-```python
-def dropout(key: rand.KeyArray, x: np.ndarray):
-    keep_rate = 0.9
-
-    y = x * rand.bernoulli(key, p=keep_rate, shape=x.shape) / keep_rate
-    return y
-```
-
-### 2.2. Layer Norm
-
-![](https://raw.githubusercontent.com/hyunwoongko/transformer/master/image/layer_norm.jpg)
-
-```python
-def fwd_layer_norm(params: dict, x: np.ndarray) -> np.ndarray:
-    # params
-    scale: np.ndarray = params['scale']  # array
-    bias: np.ndarray = params['bias']  # array
-
-    eps = 1e-5
-
-    mean = x.mean(-1, keepdims=True)
-    var = x.var(-1, keepdims=True)
-    return ((x - mean) / np.sqrt(var + eps)) * scale + bias
-```
-
-### 2.3. Embedding
-
-```python
-def fwd_embedding(params: dict, x: np.ndarray) -> np.ndarray:
-    # params
-    embedding: np.ndarray = params['embedding']  # array
-
-    y = embedding[x]
-    return y
-```
-
-### 2.4. Linear
-
-```python
-def fwd_linear(params: dict, x: np.ndarray) -> np.ndarray:
-    # params
-    kernel: np.ndarray = params['kernel']  # array
-    bias: np.ndarray = params['bias']  # array
-
-    return np.dot(x, kernel) + bias
-```
-
-### 2.5. Attention
-
-![](https://raw.githubusercontent.com/hyunwoongko/transformer/master/image/multi_head_attention.jpg)
-
-```python
-def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    # params
-    q_proj: dict = params['q_proj']  # linear
-    k_proj: dict = params['k_proj']  # linear
-    v_proj: dict = params['v_proj']  # linear
-    ff: dict = params['ff']  # linear
-
-    _, _, d_k = q_proj['kernel'].shape
-
-    q = fwd_linear(q_proj, dst)
-    k = fwd_linear(k_proj, src)
-    v = fwd_linear(v_proj, src)
-
-    qk = np.einsum('bkhm,bvhm->bhkv', q, k)
-    qk = qk / np.sqrt(d_k)
-    qk = np.where(mask, qk, np.NINF)
-    qk = nn.softmax(qk)
-    qk = np.where(mask, qk, 0)
-
-    t = np.einsum('bhkv,bvhm->bkhm', qk, v)
-    d0, d1, d2, d3 = t.shape
-    t = t.reshape(d0, d1, d2 * d3)
-
-    t = fwd_linear(ff, t)
-    return t
-```
-
-### 2.6. Transformer Encoder
-
-```python
-def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
-    # params
-    self_attn: dict = params['self_attn']  # attention
-    self_attn_layer_norm: dict = params['self_attn_layer_norm']  # layer norm
-    ff0: dict = params['ff0']  # linear
-    ff1: dict = params['ff1']  # linear
-    final_layer_norm: dict = params['final_layer_norm']  # layer norm
-
-    if dropout_key is not None:
-        subkeys = rand.split(dropout_key, num=3)
-
-    src_ = src
-    t = fwd_attention(self_attn, src, src, mask_enc)
-    if dropout_key is not None:
-        t = dropout(subkeys[0], t)
-    t = t + src_
-    t = fwd_layer_norm(self_attn_layer_norm, t)
-
-    t_ = t
-    t = fwd_linear(ff0, t)
-    t = nn.gelu(t)
-    if dropout_key is not None:
-        t = dropout(subkeys[1], t)
-    t = fwd_linear(ff1, t)
-    if dropout_key is not None:
-        t = dropout(subkeys[2], t)
-    t = t + t_
-    t = fwd_layer_norm(final_layer_norm, t)
-    return t
-```
-
-### 2.7. Transformer Decoder
-
-```python
-def fwd_transformer_decoder(params: dict, src: np.ndarray, dst: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
-    # params
-    self_attn: dict = params['self_attn']  # attention
-    self_attn_layer_norm: dict = params['self_attn_layer_norm']  # layer norm
-    cross_attn: dict = params['cross_attn']  # attention
-    cross_attn_layer_norm: dict = params['cross_attn_layer_norm']  # layer norm
-    ff0: dict = params['ff0']  # linear
-    ff1: dict = params['ff1']  # linear
-    final_layer_norm: dict = params['final_layer_norm']  # layer norm
-
-    if dropout_key is not None:
-        subkeys = rand.split(dropout_key, num=4)
-
-    dst_ = dst
-    dst = fwd_attention(self_attn, dst, dst, mask_dec)
-    if dropout_key is not None:
-        dst = dropout(subkeys[0], dst)
-    dst = dst + dst_
-    dst = fwd_layer_norm(self_attn_layer_norm, dst)
-
-    dst_ = dst
-    src = fwd_attention(cross_attn, src, dst, mask_dec_enc)
-    if dropout_key is not None:
-        src = dropout(subkeys[1], src)
-    t = src + dst_
-    t = fwd_layer_norm(cross_attn_layer_norm, t)
-
-    t_ = t
-    t = fwd_linear(ff0, t)
-    t = nn.gelu(t)
-    if dropout_key is not None:
-        t = dropout(subkeys[2], t)
-    t = fwd_linear(ff1, t)
-    if dropout_key is not None:
-        t = dropout(subkeys[3], t)
-    t = t + t_
-    t = fwd_layer_norm(final_layer_norm, t)
-    return t
-```
-
-### 2.8. Transformer
-
-```python
-def fwd_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
-    # params
-    embedding: dict = params['embedding']  # embedding
-    encoder_embed_positions: np.ndarray = params['encoder_embed_positions']  # array
-    decoder_embed_positions: np.ndarray = params['decoder_embed_positions']  # array
-    encoder_embed_layer_norm: dict = params['encoder_embed_layer_norm']  # layer norm
-    decoder_embed_layer_norm: dict = params['decoder_embed_layer_norm']  # layer norm
-    encoder_layers: list = params['encoder_layers']  # list of transformer encoder
-    decoder_layers: list = params['decoder_layers']  # list of transformer encoder
-
-    if dropout_key is not None:
-        num_keys = 2 + len(encoder_layers) + len(decoder_layers)
-        keys = iter(rand.split(dropout_key, num=num_keys))
-
-    _, width_enc = src.shape
-    _, width_dec = dst.shape
-
-    # https://github.com/huggingface/transformers/blob/v4.17.0/src/transformers/models/bart/modeling_flax_bart.py#L718-L719
-    offset = 2
-
-    # encoder
-    src = fwd_embedding(embedding, src)
-    src = src + encoder_embed_positions[offset:width_enc+offset]
-    src = fwd_layer_norm(encoder_embed_layer_norm, src)
-
-    if dropout_key is not None:
-        src = dropout(next(keys), src)
-
-    for encoder_layer in encoder_layers:
-        if dropout_key is not None:
-            src = fwd_transformer_encoder(encoder_layer, src, mask_enc, dropout_key=next(keys))
-        else:
-            src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
-
-    # decoder
-    dst = fwd_embedding(embedding, dst)
-    dst = dst + decoder_embed_positions[offset:width_dec+offset]
-    dst = fwd_layer_norm(decoder_embed_layer_norm, dst)
-
-    if dropout_key is not None:
-        dst = dropout(next(keys), dst)
-
-    for decoder_layer in decoder_layers:
-        if dropout_key is not None:
-            dst = fwd_transformer_decoder(decoder_layer, src, dst, mask_dec, mask_dec_enc, dropout_key=next(keys))
-        else:
-            dst = fwd_transformer_decoder(decoder_layer, src, dst, mask_dec, mask_dec_enc)
-
-    return dst
-```
+- Dropout function
+- Layer Norm
+- Embedding
+- Linear
+- Attention
+- Transformer Encoder
+- Transformer Decoder
+- Transformer
 
 ## 3. Parameters
 
