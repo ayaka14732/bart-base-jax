@@ -1,36 +1,5 @@
 # JAX Implementation of bart-base
 
-* [1. Motivation](#1-motivation)
-* [2. Architecture](#2-architecture)
-    * [2.1. Dropout function](#21-dropout-function)
-    * [2.2. Layer Norm](#22-layer-norm)
-    * [2.3. Embedding](#23-embedding)
-    * [2.4. Linear](#24-linear)
-    * [2.5. Attention](#25-attention)
-    * [2.6. Transformer Encoder](#26-transformer-encoder)
-    * [2.7. Transformer Decoder](#27-transformer-decoder)
-    * [2.8. Transformer](#28-transformer)
-* [3. Parameters](#3-parameters)
-    * [3.1. Overview](#31-overview)
-    * [3.2. Original checkpoint](#32-original-checkpoint)
-    * [3.3. Flax BART model in Hugging Face](#33-flax-bart-model-in-hugging-face)
-    * [3.4. This project](#34-this-project)
-* [4. Training](#4-training)
-* [5. Evaluation](#5-evaluation)
-* [6. Implementation Notes](#6-implementation-notes)
-    * [6.1. The bart-large model itself does not work properly](#61-the-bart-large-model-itself-does-not-work-properly)
-    * [6.2. np.std and torch.std are different](#62-npstd-and-torchstd-are-different)
-    * [6.3. Computations on TPU are in low precision by default](#63-computations-on-tpu-are-in-low-precision-by-default)
-    * [6.4. BART has extra bias parameters for Layer Norm](#64-bart-has-extra-bias-parameters-for-layer-norm)
-    * [6.5. BART has extra bias parameters for <em>Q</em>, <em>K</em> and <em>V</em>](#65-bart-has-extra-bias-parameters-for-q-k-and-v)
-    * [6.6. Positional encoding is learned rather than fixed](#66-positional-encoding-is-learned-rather-than-fixed)
-    * [6.7. Positional encoding has an offset of 2](#67-positional-encoding-has-an-offset-of-2)
-    * [6.8. BART uses tied word embeddings](#68-bart-uses-tied-word-embeddings)
-    * [6.9. BART has extra dropout after activation](#69-bart-has-extra-dropout-after-activation)
-    * [6.10. Hugging Face Transformers 4.17.0 is not compactible with JAX 0.3.4](#610-hugging-face-transformers-4170-is-not-compactible-with-jax-034)
-
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
 ## 1. Motivation
 
 This project is the JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. It is built with two objectives in mind:
@@ -43,7 +12,7 @@ In addition to the regular implementation, I also implemented the model [in a si
 
 This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer). Nevertheless, the code is written entirely on my own.
 
-## 2. Environment Setip
+## 2. Environment Setup
 
 Setup on Cloud TPU
 
