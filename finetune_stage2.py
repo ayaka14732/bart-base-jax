@@ -4,6 +4,7 @@ import jax.numpy as np
 import jax.random as rand
 import numpy as onp
 import optax
+import sys
 import time
 from transformers import BartTokenizer
 import wandb
@@ -12,6 +13,8 @@ from lib.load_dataset import load_dataset
 from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.fwd_nmt_transformer import fwd_nmt_transformer
+
+assert len(sys.argv) == 2, 'Please provide the path to model checkpoint (*.dat) as a command line argument'
 
 # Procedure:
 # 1. load a pretrained BART-base-chinese encoder
@@ -27,7 +30,7 @@ n_epoch = 1
 batch_size = 16 * n_devices  # 28 * n_devices
 learning_rate = 0.023
 
-wandb.init(project='bart-nmt-zh-en', config={
+wandb.init(project='bart-nmt-zh-en-stage-2', config={
     'n_epoch': n_epoch,
     'batch_size': batch_size,
     'learning_rate': learning_rate,
@@ -46,24 +49,7 @@ def cross_entropy_loss(logits, labels, mask):
 
 en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-def make_params():
-    params_ch = jax.tree_map(np.asarray, load_params('params_bart_base_zh.dat'))
-    params_en = jax.tree_map(np.asarray, load_params('params_bart_base_en.dat'))
-    return {
-        'ch': {
-            'embedding': params_ch['embedding'],
-            'encoder_embed_positions': params_ch['encoder_embed_positions'],
-            'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
-            'encoder_layers': params_ch['encoder_layers'],
-        },
-        'embedding': params_en['embedding'],
-        'decoder_embed_positions': params_en['decoder_embed_positions'],
-        'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
-        'encoder_layers': params_en['encoder_layers'],
-        'decoder_layers': params_en['decoder_layers'],
-    }
-
-params = make_params()
+params = load_params(sys.argv[1])
 
 param_labels = {
     'ch': {
@@ -79,7 +65,7 @@ param_labels = {
     'decoder_layers': ['train', 'freeze', 'freeze', 'freeze', 'freeze', 'freeze'],
 }
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
+input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('newscom21.zh', 'newscom21.en')
 eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = load_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
 
 optimizer_scheme = {
@@ -174,7 +160,7 @@ n_sents = len(input_ids)
 
 permute = do_on_cpu(lambda key: rand.permutation(key, n_sents))
 
-jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
+# jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
 
 for _ in range(1, n_epoch + 1):
     epoch_loss = 0.
@@ -224,4 +210,4 @@ for _ in range(1, n_epoch + 1):
 
     save_ckpt()
 
-jax.profiler.stop_trace()
+# jax.profiler.stop_trace()

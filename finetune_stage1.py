@@ -174,7 +174,7 @@ n_sents = len(input_ids)
 
 permute = do_on_cpu(lambda key: rand.permutation(key, n_sents))
 
-jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
+# jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
 
 for _ in range(1, n_epoch + 1):
     epoch_loss = 0.
@@ -224,4 +224,4 @@ for _ in range(1, n_epoch + 1):
 
     save_ckpt()
 
-jax.profiler.stop_trace()
+# jax.profiler.stop_trace()
