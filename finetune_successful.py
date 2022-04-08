@@ -2,11 +2,10 @@ import functools
 import jax
 import jax.numpy as np
 import jax.random as rand
-import math
 import numpy as onp
 import optax
+import time
 from transformers import BartTokenizer
-from tqdm import trange
 import wandb
 
 from lib.load_dataset import load_dataset
@@ -25,7 +24,7 @@ n_devices = jax.local_device_count()
 assert n_devices == 8
 
 n_epoch = 1
-batch_size = 18 * n_devices
+batch_size = 16 * n_devices  # 28 * n_devices
 learning_rate = 0.023
 
 wandb.init(project='bart-nmt-zh-en', config={
@@ -34,8 +33,6 @@ wandb.init(project='bart-nmt-zh-en', config={
     'learning_rate': learning_rate,
     'extra_description': 'using sgd optimizer; trained on wikimatrix21; 13th revision of freezing',
 })
-
-jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
 
 def cross_entropy_loss(logits, labels, mask):
     exp_logits = np.exp(logits)
@@ -175,15 +172,20 @@ def save_ckpt():
 key = rand.PRNGKey(42)
 n_sents = len(input_ids)
 
-for _ in trange(1, n_epoch + 1, desc='Epoch', smoothing=1.):
+permute = do_on_cpu(lambda key: rand.permutation(key, n_sents))
+
+jax.profiler.start_trace(log_dir='/tmp/jax-profiler')
+
+for _ in range(1, n_epoch + 1):
     epoch_loss = 0.
-    eval_loss = math.inf
 
     n_batches = n_sents // batch_size
     key, subkey = rand.split(key)
-    shuffled_indices = onp.asarray(do_on_cpu(lambda: rand.permutation(subkey, n_sents))())
+    shuffled_indices = onp.asarray(permute(subkey))
 
-    for i in trange(n_batches, desc='Batch', leave=False, smoothing=1.):
+    for i in range(n_batches):
+        start_time = time.time()
+
         batch = shuffled_indices[i*batch_size:(i+1)*batch_size]
 
         src = input_ids[batch]
@@ -211,16 +213,11 @@ for _ in trange(1, n_epoch + 1, desc='Epoch', smoothing=1.):
 
         batch_loss = replicated_loss[0].item()
         assert not np.isnan(batch_loss)
-        wandb.log({'batch loss': batch_loss})
         epoch_loss += batch_loss
 
-        if i % 2000 == 1999:
-            new_eval_loss = evaluate(replicated_params)
-            if new_eval_loss > eval_loss:
-                break
+        elapsed_time = time.time() - start_time
 
-            eval_loss = new_eval_loss
-            save_ckpt()
+        wandb.log({'batch loss': batch_loss, 'time': elapsed_time})
 
     epoch_loss /= n_batches
     wandb.log({'epoch loss': epoch_loss})
