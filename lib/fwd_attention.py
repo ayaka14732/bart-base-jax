@@ -12,19 +12,16 @@ def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarr
 
     _, _, d_k = q_proj['kernel'].shape
 
-    q = fwd_linear(q_proj, dst)
-    k = fwd_linear(k_proj, src)
-    v = fwd_linear(v_proj, src)
+    q = fwd_linear(q_proj, dst)  # bs, n_heads, dst_len, d_k
+    k = fwd_linear(k_proj, src)  # bs, n_heads, src_len, d_k
+    v = fwd_linear(v_proj, src)  # bs, n_heads, src_len, d_v
 
-    qk = np.einsum('bkhm,bvhm->bhkv', q, k)
+    qk = np.einsum('bhdk,bhsk->bhds', q, k)  # bs, n_heads, dst_len, src_len
     qk = qk / np.sqrt(d_k)
     qk = np.where(mask, qk, np.NINF)
     qk = nn.softmax(qk)
-    qk = np.where(mask, qk, 0)
+    # qk = np.where(mask, qk, 0)
+    qkv = np.einsum('bhds,bhsv->bhdv', qk, v)  # bs, n_heads, dst_len, d_v
+    output = np.einsum('bhdv,hvm->bdm', qkv, ff)  # bs, src_len. d_model
 
-    t = np.einsum('bhkv,bvhm->bkhm', qk, v)
-    d0, d1, d2, d3 = t.shape
-    t = t.reshape(d0, d1, d2 * d3)
-
-    t = fwd_linear(ff, t)
-    return t
+    return output

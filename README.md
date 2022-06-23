@@ -86,8 +86,6 @@ The original model implementation and checkpoints are available in the [pytorch/
 
 ### 4.3. Flax BART model in Hugging Face Transformers
 
-![](assets/parameter-format-1.svg)
-
 ```
 shared
     embedding (50265, 768)
@@ -177,13 +175,11 @@ decoder
 
 ### 4.4. JAX parameters in this project
 
-![](assets/parameter-format-2.svg)
-
 ```
 embedding
     embedding (50265, 768)
-encoder_embed_positions (1026, 768)
-decoder_embed_positions (1026, 768)
+encoder_embed_positions (1024, 768)
+decoder_embed_positions (1024, 768)
 encoder_embed_layer_norm
     scale (768,)
     bias (768,)
@@ -194,16 +190,16 @@ encoder_layers
     0..5
         self_attn
             q_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             k_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             v_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             ff
-                kernel (768, 768)
+                kernel (12, 64, 768)
                 bias (768,)
         self_attn_layer_norm
             scale (768,)
@@ -221,32 +217,32 @@ decoder_layers
     0..5
         self_attn
             q_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             k_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             v_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             ff
-                kernel (768, 768)
+                kernel (12, 64, 768)
                 bias (768,)
         self_attn_layer_norm
             scale (768,)
             bias (768,)
         cross_attn
             q_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             k_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             v_proj
-                kernel (12, 768, 64)
+                kernel (768, 12, 64)
                 bias (12, 64)
             ff
-                kernel (768, 768)
+                kernel (12, 64, 768)
                 bias (768,)
         cross_attn_layer_norm
             scale (768,)

@@ -17,11 +17,9 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
 
     _, width_enc = src.shape
 
-    offset = 2
-
     # encoder
     src = fwd_embedding(embedding, src)
-    src = src + encoder_embed_positions[offset:width_enc+offset]
+    src = src + encoder_embed_positions[width_enc]
     src = fwd_layer_norm(encoder_embed_layer_norm, src)
 
     for encoder_layer in encoder_layers:

@@ -1,7 +1,17 @@
+import jax.numpy as np
+
+OFFSET = 2
+
 def convert_qkv(params):
     return {
-        'kernel': params['kernel'].transpose(1, 0, 2).reshape(768, 768),
+        'kernel': params['kernel'].reshape(768, 768),
         'bias': params['bias'].reshape(768),
+    }
+
+def convert_ff(params):
+    return {
+        'kernel': params['kernel'].reshape(768, 768),
+        'bias': params['bias'],
     }
 
 def convert_transformer_encoder(params):
@@ -10,7 +20,7 @@ def convert_transformer_encoder(params):
             'q_proj': convert_qkv(params['self_attn']['q_proj']),
             'k_proj': convert_qkv(params['self_attn']['k_proj']),
             'v_proj': convert_qkv(params['self_attn']['v_proj']),
-            'out_proj': params['self_attn']['ff'],
+            'out_proj': convert_ff(params['self_attn']['ff']),
         },
         'self_attn_layer_norm': params['self_attn_layer_norm'],
         'fc1': params['ff0'],
@@ -24,14 +34,14 @@ def convert_transformer_decoder(params):
             'q_proj': convert_qkv(params['self_attn']['q_proj']),
             'k_proj': convert_qkv(params['self_attn']['k_proj']),
             'v_proj': convert_qkv(params['self_attn']['v_proj']),
-            'out_proj': params['self_attn']['ff'],
+            'out_proj': convert_ff(params['self_attn']['ff']),
         },
         'self_attn_layer_norm': params['self_attn_layer_norm'],
         'encoder_attn': {
             'q_proj': convert_qkv(params['cross_attn']['q_proj']),
             'k_proj': convert_qkv(params['cross_attn']['k_proj']),
             'v_proj': convert_qkv(params['cross_attn']['v_proj']),
-            'out_proj': params['cross_attn']['ff'],
+            'out_proj': convert_ff(params['cross_attn']['ff']),
         },
         'encoder_attn_layer_norm': params['cross_attn_layer_norm'],
         'fc1': params['ff0'],
@@ -39,16 +49,20 @@ def convert_transformer_decoder(params):
         'final_layer_norm': params['final_layer_norm'],
     }
 
+def convert_embed_positions(params):
+    dummy = np.zeros(2, 768)
+    return np.vstack((dummy, params))
+
 def jax2flax(params):
     params = {
         'shared': {'embedding': params['embedding']['embedding']},
         'encoder': {
-            'embed_positions': {'embedding': params['encoder_embed_positions']},
+            'embed_positions': {'embedding': convert_embed_positions(params['encoder_embed_positions'])},
             'layernorm_embedding': params['encoder_embed_layer_norm'],
             'layers': {str(i): convert_transformer_encoder(layer) for i, layer in enumerate(params['encoder_layers'])},
         },
         'decoder': {
-            'embed_positions': {'embedding': params['decoder_embed_positions']},
+            'embed_positions': {'embedding': convert_embed_positions(params['decoder_embed_positions'])},
             'layernorm_embedding': params['decoder_embed_layer_norm'],
             'layers': {str(i): convert_transformer_decoder(layer) for i, layer in enumerate(params['decoder_layers'])},
         },
