@@ -50,7 +50,7 @@ def convert_transformer_decoder(params):
     }
 
 def convert_embed_positions(params):
-    dummy = np.zeros(2, 768)
+    dummy = np.zeros((2, 768))
     return np.vstack((dummy, params))
 
 def jax2flax(params):

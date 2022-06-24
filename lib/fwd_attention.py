@@ -1,7 +1,7 @@
 import jax.nn as nn
 import jax.numpy as np
 
-from .fwd_linear import fwd_linear
+from .param_utils.dump_shapes import dump_shapes
 
 def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarray) -> np.ndarray:
     # params
@@ -12,9 +12,15 @@ def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarr
 
     _, _, d_k = q_proj['kernel'].shape
 
-    q = fwd_linear(q_proj, dst)  # bs, n_heads, dst_len, d_k
-    k = fwd_linear(k_proj, src)  # bs, n_heads, src_len, d_k
-    v = fwd_linear(v_proj, src)  # bs, n_heads, src_len, d_v
+    if 'bias' not in q_proj:
+        assert 'bias' not in k_proj and 'bias' not in v_proj
+        q = np.einsum('bdm,mhk->bhdk', dst, q_proj['kernel'])  # bs, n_heads, dst_len, d_k
+        k = np.einsum('bsm,mhk->bhsk', src, k_proj['kernel'])  # bs, n_heads, src_len, d_k
+        v = np.einsum('bsm,mhv->bhsv', src, v_proj['kernel'])  # bs, n_heads, src_len, d_v
+    else:
+        q = (np.einsum('bdm,mhk->bdhk', dst, q_proj['kernel']) + q_proj['bias']).swapaxes(1, 2)  # bs, n_heads, dst_len, d_k
+        k = (np.einsum('bsm,mhk->bshk', src, k_proj['kernel']) + k_proj['bias']).swapaxes(1, 2)  # bs, n_heads, src_len, d_k
+        v = (np.einsum('bsm,mhv->bshv', src, v_proj['kernel']) + v_proj['bias']).swapaxes(1, 2)  # bs, n_heads, src_len, d_v
 
     qk = np.einsum('bhdk,bhsk->bhds', q, k)  # bs, n_heads, dst_len, src_len
     qk = qk / np.sqrt(d_k)
@@ -22,6 +28,10 @@ def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarr
     qk = nn.softmax(qk)
     # qk = np.where(mask, qk, 0)
     qkv = np.einsum('bhds,bhsv->bhdv', qk, v)  # bs, n_heads, dst_len, d_v
-    output = np.einsum('bhdv,hvm->bdm', qkv, ff)  # bs, src_len. d_model
+
+    if 'bias' not in ff:
+        output = np.einsum('bhdv,hvm->bdm', qkv, ff)  # bs, src_len. d_model
+    else:
+        output = np.einsum('bhdv,hvm->bdm', qkv, ff['kernel']) + ff['bias']  # bs, src_len. d_model
 
     return output

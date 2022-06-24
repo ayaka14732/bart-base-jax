@@ -1,7 +1,7 @@
 import jax.numpy as np
 
 def fwd_linear(params: dict, x: np.ndarray) -> np.ndarray:
-    if not 'bias' in params:
+    if 'bias' not in params:
         # params
         kernel: np.ndarray = params['kernel']  # array
 
