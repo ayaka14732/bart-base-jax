@@ -1,5 +1,3 @@
-import jax.numpy as np
-
 def convert_qkv(params):
     return {
         'kernel': params['kernel'].reshape(768, 768),
