@@ -43,7 +43,7 @@ def fwd_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np
 
     # decoder
     dst = fwd_embedding(embedding, dst)
-    dst = dst + decoder_embed_positions[offset:width_enc+offset]
+    dst = dst + decoder_embed_positions[offset:width_dec+offset]
     dst = fwd_layer_norm(decoder_embed_layer_norm, dst)
 
     if dropout_key is not None:
