@@ -12,17 +12,16 @@ def fwd_attention(params: dict, src: np.ndarray, dst: np.ndarray, mask: np.ndarr
 
     _, _, d_k = q_proj['kernel'].shape
 
-    if 'bias' not in q_proj:
-        assert 'bias' not in k_proj and 'bias' not in v_proj
-        q = np.einsum('bdm,mhk->bhdk', dst, q_proj['kernel'])  # bs, n_heads, dst_len, d_k
-        k = np.einsum('bsm,mhk->bhsk', src, k_proj['kernel'])  # bs, n_heads, src_len, d_k
-        v = np.einsum('bsm,mhv->bhsv', src, v_proj['kernel'])  # bs, n_heads, src_len, d_v
-    else:
-        q = (np.einsum('bdm,mhk->bdhk', dst, q_proj['kernel']) + q_proj['bias']).swapaxes(1, 2)  # bs, n_heads, dst_len, d_k
-        k = (np.einsum('bsm,mhk->bshk', src, k_proj['kernel']) + k_proj['bias']).swapaxes(1, 2)  # bs, n_heads, src_len, d_k
-        v = (np.einsum('bsm,mhv->bshv', src, v_proj['kernel']) + v_proj['bias']).swapaxes(1, 2)  # bs, n_heads, src_len, d_v
+    q = np.einsum('bdm,mhk->bdhk', dst, q_proj['kernel'])  # bs, dst_len, n_heads, d_k
+    k = np.einsum('bsm,mhk->bshk', src, k_proj['kernel'])  # bs, src_len, n_heads, d_k
+    v = np.einsum('bsm,mhv->bshv', src, v_proj['kernel'])  # bs, src_len, n_heads, d_v
 
-    qk = np.einsum('bhdk,bhsk->bhds', q, k)  # bs, n_heads, dst_len, src_len
+    if 'bias' in q_proj:
+        q += q_proj['bias']  # bs, dst_len, n_heads, d_k
+        k += k_proj['bias']  # bs, src_len, n_heads, d_k
+        v += v_proj['bias']  # bs, src_len, n_heads, d_v
+
+    qk = np.einsum('bdhk,bshk->bhds', q, k)  # bs, n_heads, dst_len, src_len
     qk = qk / np.sqrt(d_k)
     qk = np.where(mask, qk, np.NINF)
     qk = nn.softmax(qk)

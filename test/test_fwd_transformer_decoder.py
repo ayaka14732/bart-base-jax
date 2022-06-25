@@ -18,7 +18,7 @@ d_v = 7
 d_ff = 8
 d_model = 9
 
-self_attn_q_kernel = rand(d_k)
+self_attn_q_kernel = rand(d_model, n_heads, d_k)
 self_attn_q_bias = rand(n_heads, d_k)
 
 self_attn_k_kernel = rand(d_model, n_heads, d_k)
