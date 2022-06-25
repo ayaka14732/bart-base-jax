@@ -191,8 +191,8 @@ decoder
 ```
 embedding
     embedding (50265, 768)
-encoder_embed_positions (1024, 768)
-decoder_embed_positions (1024, 768)
+encoder_embed_positions (1026, 768)
+decoder_embed_positions (1026, 768)
 encoder_embed_layer_norm
     scale (768,)
     bias (768,)

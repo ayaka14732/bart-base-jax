@@ -26,9 +26,9 @@ def check_shape_equal_except_for_embeddings():
             # vocab size (50265 vs 21128)
             model_bart_base_en.config.vocab_size,
             model_bart_base_zh.config.vocab_size,
-            # max position embeddings (1024 vs 512)
-            model_bart_base_en.config.max_position_embeddings,
-            model_bart_base_zh.config.max_position_embeddings,
+            # max position embeddings (1026 vs 514)
+            model_bart_base_en.config.max_position_embeddings + 2,
+            model_bart_base_zh.config.max_position_embeddings + 2,
         )
         return tuple(-1 if i in embed_sizes else i for i in x.shape)
     assert_tree_equal(
@@ -54,7 +54,7 @@ save_params(params_bart_base_zh_rand, 'params_bart_base_zh_rand.dat')
 # roundtrip test for flax2jax => jax2flax
 
 params_bart_base_en_flax_roundtrip = jax2flax(params_bart_base_en)
-# TODO: assert_tree_equal(params_bart_base_en_flax, params_bart_base_en_flax_roundtrip)
+assert_tree_equal(params_bart_base_en_flax, params_bart_base_en_flax_roundtrip)
 
 # roundtrip test for flax2pt (done by the transformers library) => pt2jax and flax2jax
 
@@ -64,4 +64,4 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     model_bart_base_zh_rand_pt = BartForConditionalGeneration.from_pretrained(tmpdirname, from_flax=True)
 
 params_bart_base_zh_rand_ = pt2jax(dict(model_bart_base_zh_rand_pt.model.named_parameters()))
-# TODO: assert_tree_equal(params_bart_base_zh_rand, params_bart_base_zh_rand_)
+assert_tree_equal(params_bart_base_zh_rand, params_bart_base_zh_rand_)

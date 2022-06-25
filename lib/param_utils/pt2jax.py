@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as np
 
-OFFSET = 2
-
 def dotted_dict2nested_dict(params):
     for k in list(params):
         if '.' in k:
@@ -81,8 +79,8 @@ def pt2jax(params):
     params = jax.tree_map(lambda x: np.asarray(x.detach().numpy()), params)
     params = {
         'embedding': {'embedding': params['shared']['weight']},
-        'encoder_embed_positions': params['encoder']['embed_positions']['weight'][OFFSET:],
-        'decoder_embed_positions': params['decoder']['embed_positions']['weight'][OFFSET:],
+        'encoder_embed_positions': params['encoder']['embed_positions']['weight'],
+        'decoder_embed_positions': params['decoder']['embed_positions']['weight'],
         'encoder_embed_layer_norm': convert_layer_norm(params['encoder']['layernorm_embedding']),
         'decoder_embed_layer_norm': convert_layer_norm(params['decoder']['layernorm_embedding']),
         'encoder_layers': [convert_transformer_encoder(params['encoder']['layers'][str(i)]) for i in range(6)],

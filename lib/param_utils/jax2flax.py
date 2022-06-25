@@ -1,7 +1,5 @@
 import jax.numpy as np
 
-OFFSET = 2
-
 def convert_qkv(params):
     return {
         'kernel': params['kernel'].reshape(768, 768),
@@ -49,20 +47,16 @@ def convert_transformer_decoder(params):
         'final_layer_norm': params['final_layer_norm'],
     }
 
-def convert_embed_positions(params):
-    dummy = np.zeros((2, 768))
-    return np.vstack((dummy, params))
-
 def jax2flax(params):
     params = {
         'shared': {'embedding': params['embedding']['embedding']},
         'encoder': {
-            'embed_positions': {'embedding': convert_embed_positions(params['encoder_embed_positions'])},
+            'embed_positions': {'embedding': params['encoder_embed_positions']},
             'layernorm_embedding': params['encoder_embed_layer_norm'],
             'layers': {str(i): convert_transformer_encoder(layer) for i, layer in enumerate(params['encoder_layers'])},
         },
         'decoder': {
-            'embed_positions': {'embedding': convert_embed_positions(params['decoder_embed_positions'])},
+            'embed_positions': {'embedding': params['decoder_embed_positions']},
             'layernorm_embedding': params['decoder_embed_layer_norm'],
             'layers': {str(i): convert_transformer_decoder(layer) for i, layer in enumerate(params['decoder_layers'])},
         },

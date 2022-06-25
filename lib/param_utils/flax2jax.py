@@ -1,5 +1,3 @@
-OFFSET = 2
-
 def convert_qkv(params):
     return {
         'kernel': params['kernel'].reshape(768, 12, 64),
@@ -50,8 +48,8 @@ def convert_transformer_decoder(params):
 def flax2jax(params):
     params = {
         'embedding': {'embedding': params['shared']['embedding']},
-        'encoder_embed_positions': params['encoder']['embed_positions']['embedding'][OFFSET:],
-        'decoder_embed_positions': params['decoder']['embed_positions']['embedding'][OFFSET:],
+        'encoder_embed_positions': params['encoder']['embed_positions']['embedding'],
+        'decoder_embed_positions': params['decoder']['embed_positions']['embedding'],
         'encoder_embed_layer_norm': params['encoder']['layernorm_embedding'],
         'decoder_embed_layer_norm': params['decoder']['layernorm_embedding'],
         'encoder_layers': [convert_transformer_encoder(params['encoder']['layers'][str(i)]) for i in range(6)],
