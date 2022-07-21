@@ -10,10 +10,12 @@ import numpy as np
 from transformers import BartTokenizer
 
 from lib.preprocess_utils.noising_tokenizer import tokenize_and_distort_sentences
+from lib.param_utils import save_params
 
 jax.config.update('jax_platform_name', 'cpu')
 
 sequence_len: int = 256
+assert sequence_len % 8 == 0
 key = rand.PRNGKey(42)
 
 def article_to_sentences(text: str) -> List[str]:
@@ -45,21 +47,22 @@ def tokenize_sentences(tokenizer, sentences):
     batch = tokenizer(sentences, max_length=sequence_len, padding='max_length', truncation=True, return_tensors='np')
     src = batch.input_ids.astype(np.int32)
     mask_1d = batch.attention_mask.astype(np.bool_)
-    return src, mask_1d
+    packed_mask_1d = np.packbits(mask_1d, axis=1)
+    return src, packed_mask_1d
 
 def pipeline(key, filename):
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base', add_prefix_space=True)
     sentences = filename_to_sentences(filename)
-    dst, mask_dec_1d = tokenize_sentences(tokenizer, sentences)
-    src, mask_enc_1d = tokenize_and_distort_sentences(key, tokenizer, sentences, sequence_len)
-    return src, mask_enc_1d, dst, mask_dec_1d
+    dst, packed_mask_dec_1d = tokenize_sentences(tokenizer, sentences)
+    src, packed_mask_enc_1d = tokenize_and_distort_sentences(key, tokenizer, sentences, sequence_len)
+    return src, packed_mask_enc_1d, dst, packed_mask_dec_1d
 
 if __name__ == '__main__':
     set_start_method('spawn')
 
     # list files
 
-    filenames = glob('./dump/*/*')
+    filenames = glob('./dump/*/*')[:200]
     key, *subkeys = rand.split(key, num=len(filenames))
 
     # process
@@ -70,29 +73,30 @@ if __name__ == '__main__':
     # unzip
 
     src = []
-    mask_enc_1d = []
+    packed_mask_enc_1d = []
     dst = []
-    mask_dec_1d = []
+    packed_mask_dec_1d = []
 
-    for src_, mask_enc_1d_, dst_, mask_dec_1d_ in xs:
+    for src_, packed_mask_enc_1d_, dst_, packed_mask_dec_1d_ in xs:
         src.append(src_)
-        mask_enc_1d.append(mask_enc_1d_)
+        packed_mask_enc_1d.append(packed_mask_enc_1d_)
         dst.append(dst_)
-        mask_dec_1d.append(mask_dec_1d_)
+        packed_mask_dec_1d.append(packed_mask_dec_1d_)
+
+    # write
 
     src = np.vstack(src)
-    mask_enc_1d = np.vstack(mask_enc_1d)
+    save_params(src, 'src.dat')
+    del src
+
+    packed_mask_enc_1d = np.vstack(packed_mask_enc_1d)
+    save_params(packed_mask_enc_1d, 'packed_mask_enc_1d.dat')
+    del packed_mask_enc_1d
+
     dst = np.vstack(dst)
-    mask_dec_1d = np.vstack(mask_dec_1d)
+    save_params(dst, 'dst.dat')
+    del dst
 
-    # test
-
-    print(src.shape)
-    print(mask_enc_1d.shape)
-    print(dst.shape)
-    print(mask_dec_1d.shape)
-
-    print(src.dtype)
-    print(mask_enc_1d.dtype)
-    print(dst.dtype)
-    print(mask_dec_1d.dtype)
+    packed_mask_dec_1d = np.vstack(packed_mask_dec_1d)
+    save_params(packed_mask_dec_1d, 'packed_mask_dec_1d.dat')
+    del packed_mask_dec_1d

@@ -63,5 +63,6 @@ def tokenize_and_distort_sentences(key: rand.KeyArray, tokenizer: PreTrainedToke
 
     src = np.array(src, dtype=np.int32)
     mask_1d = np.array(mask_1d, dtype=np.bool_)
+    packed_mask_1d = np.packbits(mask_1d, axis=1)
 
-    return src, mask_1d
+    return src, packed_mask_1d
