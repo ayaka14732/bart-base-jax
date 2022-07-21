@@ -1,7 +1,7 @@
 from glob import glob
 import json
-from multiprocessing import Pool
-from typing import List, Optional, Tuple
+from multiprocessing import Pool, set_start_method
+from typing import List
 
 import blingfire
 import jax
@@ -11,13 +11,9 @@ from transformers import BartTokenizer
 
 from lib.preprocess_utils.noising_tokenizer import tokenize_and_distort_sentences
 
-from multiprocessing import set_start_method
-
 jax.config.update('jax_platform_name', 'cpu')
 
-n_cpu: Optional[int] = 96
-sequence_len: int = 15
-
+sequence_len: int = 256
 key = rand.PRNGKey(42)
 
 def article_to_sentences(text: str) -> List[str]:
@@ -47,48 +43,49 @@ def filename_to_sentences(filename: str) -> List[str]:
 
 def tokenize_sentences(tokenizer, sentences):
     batch = tokenizer(sentences, max_length=sequence_len, padding='max_length', truncation=True, return_tensors='np')
-    src = batch.input_ids
+    src = batch.input_ids.astype(np.int32)
     mask_1d = batch.attention_mask.astype(np.bool_)
     return src, mask_1d
 
-def pipeline(key, filename):  # TODO: find a better name
+def pipeline(key, filename):
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base', add_prefix_space=True)
     sentences = filename_to_sentences(filename)
-    tokenized_sentences = tokenize_sentences(tokenizer, sentences)
-    noised_sentences = tokenize_and_distort_sentences(key, tokenizer, sentences, sequence_len)
-    return tokenized_sentences, noised_sentences
-
-def unzip(list_of_arrs: List[Tuple[np.ndarray, np.ndarray]]) -> Tuple[np.ndarray, np.ndarray]:
-    a = []
-    b = []
-    for x, y in list_of_arrs:
-        a.append(x)
-        b.append(y)
-    a = np.vstack(a)
-    b = np.vstack(b)
-    return a, b
-
-def go(key: rand.KeyArray):
-    filenames = glob('./dump/*/*')
-    keys = rand.split(key, num=len(filenames))
-
-    with Pool(processes=n_cpu) as p:
-        # TODO Debug
-        # tokenized_sentences, noised_sentences = p.starmap(pipeline, zip(keys, filenames))
-        x = p.starmap(pipeline, zip(keys, filenames))
-        tokenized_sentences, noised_sentences, *v = x
-        assert not v, v
-
-    dst, mask_dec_1d = unzip(tokenized_sentences)
-    src, mask_enc_1d = unzip(noised_sentences)
-
+    dst, mask_dec_1d = tokenize_sentences(tokenizer, sentences)
+    src, mask_enc_1d = tokenize_and_distort_sentences(key, tokenizer, sentences, sequence_len)
     return src, mask_enc_1d, dst, mask_dec_1d
 
 if __name__ == '__main__':
     set_start_method("spawn")
 
-    key, subkey = rand.split(key, num=2)
-    src, mask_enc_1d, dst, mask_dec_1d = go(subkey)
+    # list files
+
+    filenames = glob('./dump/*/*')
+    key, subkeys = rand.split(key, num=len(filenames))
+
+    # process
+
+    with Pool() as p:
+        xs = p.starmap(pipeline, zip(subkeys, filenames))
+
+    # unzip
+
+    src = []
+    mask_enc_1d = []
+    dst = []
+    mask_dec_1d = []
+
+    for src_, mask_enc_1d_, dst_, mask_dec_1d_ in xs:
+        src.append(src_)
+        mask_enc_1d.append(mask_enc_1d_)
+        dst.append(dst_)
+        mask_dec_1d.append(mask_dec_1d_)
+
+    src = np.vstack(src)
+    mask_enc_1d = np.vstack(mask_enc_1d)
+    dst = np.vstack(dst)
+    mask_dec_1d = np.vstack(mask_dec_1d)
+
+    # test
 
     print(src.shape)
     print(mask_enc_1d.shape)
@@ -99,7 +96,3 @@ if __name__ == '__main__':
     print(mask_enc_1d.dtype)
     print(dst.dtype)
     print(mask_dec_1d.dtype)
-
-
-    # filename = glob('./dump/*/*')[2]
-    # pipeline(key, filename)
