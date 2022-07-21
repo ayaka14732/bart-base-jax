@@ -55,12 +55,12 @@ def pipeline(key, filename):
     return src, mask_enc_1d, dst, mask_dec_1d
 
 if __name__ == '__main__':
-    set_start_method("spawn")
+    set_start_method('spawn')
 
     # list files
 
     filenames = glob('./dump/*/*')
-    key, subkeys = rand.split(key, num=len(filenames))
+    key, *subkeys = rand.split(key, num=len(filenames))
 
     # process
 
