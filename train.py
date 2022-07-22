@@ -8,10 +8,8 @@ import time
 from transformers import BartTokenizer
 import wandb
 
-from lib.load_dataset import load_dataset
-from lib.param_utils.load_params import load_params
-from lib.param_utils.save_params import save_params
-from lib.fwd_nmt_transformer import fwd_nmt_transformer
+from lib import fwd_transformer
+from lib.param_utils import load_params
 
 # Procedure:
 # 1. load a pretrained BART-base-chinese encoder
@@ -27,7 +25,9 @@ n_epoch = 1
 batch_size = 16 * n_devices  # 28 * n_devices
 learning_rate = 0.023
 
-wandb.init(project='bart-nmt-zh-en', config={
+en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+
+wandb.init(project='bart-pretraining', config={
     'n_epoch': n_epoch,
     'batch_size': batch_size,
     'learning_rate': learning_rate,
@@ -35,16 +35,12 @@ wandb.init(project='bart-nmt-zh-en', config={
 })
 
 def cross_entropy_loss(logits, labels, mask):
-    exp_logits = np.exp(logits)
-    softmax_probs = exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)
-    exp_loss = np.take_along_axis(softmax_probs, labels[..., None], axis=-1)
-    loss = -np.log(exp_loss)
-    loss = loss * mask
+    labels_onehot = jax.nn.one_hot(labels, num_classes=en_tokenizer.vocab_size)
+    loss = optax.softmax_cross_entropy(logits=logits, labels=labels_onehot)
+    loss *= mask
     return np.sum(loss)
 
 # 1. load params
-
-en_tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
 def make_params():
     params_ch = jax.tree_map(np.asarray, load_params('params_bart_base_zh.dat'))
@@ -65,41 +61,18 @@ def make_params():
 
 params = make_params()
 
-param_labels = {
-    'ch': {
-        'embedding': 'freeze',
-        'encoder_embed_positions': 'train',
-        'encoder_embed_layer_norm': 'train',
-        'encoder_layers': 'train',
-    },
-    'encoder_layers': 'freeze',
-    'embedding': 'freeze',
-    'decoder_embed_positions': 'freeze',
-    'decoder_embed_layer_norm': 'freeze',
-    'decoder_layers': ['train', 'freeze', 'freeze', 'freeze', 'freeze', 'freeze'],
-}
+src = load_params('src.dat')
+packed_mask_enc_1d = load_params('packed_mask_enc_1d.dat')
+dst = load_params('dst.dat')
+packed_mask_dec_1d = load_params('packed_mask_dec_1d.dat')
 
-input_ids, mask_enc_1d, decoder_input_ids, mask_dec_1d = load_dataset('wikimatrix21.zh', 'wikimatrix21.en')
-eval_input_ids, eval_mask_enc_1d, eval_decoder_input_ids, eval_mask_decoder_1d = load_dataset('dev/newsdev2017.zh', 'dev/newsdev2017.en')
-
-optimizer_scheme = {
-    'train': optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=learning_rate),
-    ),
-    'freeze': optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=learning_rate * 0.1),
-    ),
-}
-
-optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+optimizer = optax.adam(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
 
 @jax.jit
 @jax.value_and_grad
 def train_forward(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
-    outputs = fwd_nmt_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
+    outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels, mask=mask_dec) / len(labels)
@@ -119,7 +92,7 @@ def train_step(params, opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, la
 
 @jax.jit
 def eval_forward(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels):
-    outputs = fwd_nmt_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels, mask=mask_dec) / len(labels)
@@ -143,23 +116,6 @@ def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
     mask_dec = device_split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
     mask_dec_enc = device_split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
     return mask_enc, mask_dec, mask_dec_enc
-
-def evaluate(replicated_params):
-    n_batches = len(eval_input_ids) // batch_size
-    epoch_loss = 0.
-    for i in range(n_batches):
-        src = device_split(input_ids[i * batch_size:(i + 1) * batch_size])
-        dst = device_split(decoder_input_ids[i * batch_size:(i + 1) * batch_size])
-        labels = device_split(onp.hstack(
-            (decoder_input_ids[i * batch_size:(i + 1) * batch_size, 1:],
-             np.ones((batch_size, 1), dtype=np.int32) * en_tokenizer.pad_token_id)))
-        mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d[i * batch_size:(i + 1) * batch_size],
-                                                         mask_dec_1d[i * batch_size:(i + 1) * batch_size])
-        loss = eval_step(replicated_params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels)
-        batch_loss = jax.device_get(jax.tree_map(lambda x: x[0], loss)).item()
-        epoch_loss += batch_loss
-    epoch_loss /= n_batches
-    return epoch_loss
 
 replicated_params = jax.device_put_replicated(params, devices)
 replicated_opt_state = jax.device_put_replicated(opt_state, devices)
