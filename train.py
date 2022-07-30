@@ -9,7 +9,8 @@ from transformers import BartTokenizer
 import wandb
 
 from lib import fwd_transformer
-from lib.param_utils import load_params
+# from lib.param_utils.load_params import load_params
+from lib.param_utils.init_params import init_params
 
 # Procedure:
 # 1. load a pretrained BART-base-chinese encoder
@@ -42,29 +43,7 @@ def cross_entropy_loss(logits, labels, mask):
 
 # 1. load params
 
-def make_params():
-    params_ch = jax.tree_map(np.asarray, load_params('params_bart_base_zh.dat'))
-    params_en = jax.tree_map(np.asarray, load_params('params_bart_base_en.dat'))
-    return {
-        'ch': {
-            'embedding': params_ch['embedding'],
-            'encoder_embed_positions': params_ch['encoder_embed_positions'],
-            'encoder_embed_layer_norm': params_ch['encoder_embed_layer_norm'],
-            'encoder_layers': params_ch['encoder_layers'],
-        },
-        'embedding': params_en['embedding'],
-        'decoder_embed_positions': params_en['decoder_embed_positions'],
-        'decoder_embed_layer_norm': params_en['decoder_embed_layer_norm'],
-        'encoder_layers': params_en['encoder_layers'],
-        'decoder_layers': params_en['decoder_layers'],
-    }
-
-params = make_params()
-
-src = load_params('src.dat')
-packed_mask_enc_1d = load_params('packed_mask_enc_1d.dat')
-dst = load_params('dst.dat')
-packed_mask_dec_1d = load_params('packed_mask_dec_1d.dat')
+params = init_params()
 
 optimizer = optax.adam(learning_rate=learning_rate)
 opt_state = optimizer.init(params)
