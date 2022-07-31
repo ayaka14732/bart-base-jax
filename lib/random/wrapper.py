@@ -10,7 +10,7 @@ seed2key = jax.jit(rand.PRNGKey, backend='cpu')
 seed2key.__doc__ = '''Same as `jax.random.PRNGKey`, but always produces the result on CPU.'''
 
 split_key = jax.jit(rand.split, static_argnums=(1,), backend='cpu')
-split_key.__doc__ = '''Same as `jax.random.PRNGKey`, but always produces the result on CPU.'''
+split_key.__doc__ = '''Same as `jax.random.split_key`, but always produces the result on CPU.'''
 
 # distributions
 
