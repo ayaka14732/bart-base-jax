@@ -1,12 +1,14 @@
 import jax.random as rand
 
+from lib.random.wrapper import bernoulli
+
 def distort_sentence(sentence: str, key: rand.KeyArray, keep_rate: float=0.8) -> str:
     '''
     TODO: Change to a more complicated distort method.
     '''
 
     words = sentence.split(' ')
-    list_should_keep = rand.bernoulli(key, p=keep_rate, shape=(len(words),))
+    list_should_keep = bernoulli(key, p=keep_rate, shape=(len(words),))
 
     if list_should_keep.all().item():  # should keep all
         masked_words = ['<mask>', *words[1:]]  # guarantee that at least one word is masked

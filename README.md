@@ -32,7 +32,7 @@ python3.10 -m venv ./venv
 ```sh
 pip install -U pip
 pip install -U wheel
-pip install "jax[tpu]==0.3.14" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+pip install "jax[tpu]==0.3.15" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
 (5) Install other required Python packages
@@ -53,7 +53,7 @@ python3.10 -m venv ./venv
 (2) Install JAX
 
 ```sh
-pip install "jax[cpu]==0.3.14"
+pip install "jax[cpu]==0.3.15"
 ```
 
 (3) Install other required Python packages
@@ -467,3 +467,15 @@ This can cause sneaky bugs for bart-base, in which the _Q_, _K_, _V_ matrices ar
 ### 9.6 Tokenizer
 
 If train from scratch, always add `add_prefix_space=True` when initialise the tokenizer
+
+### Code quality
+
+Cannot have
+
+can cause sneaky bugs. Remember to check it before committing
+
+```
+rand.PRNGKey
+rand.split
+42
+```
