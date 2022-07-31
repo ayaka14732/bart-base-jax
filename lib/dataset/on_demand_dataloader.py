@@ -62,7 +62,7 @@ def producer(queue: multiprocessing.Queue, n_workers: int, key: rand.KeyArray):
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
     keys = rand.split(key, num=n_chunks)
-    with multiprocessing.Pool(processes=n_workers) as p:
+    with multiprocessing.get_context('spawn').Pool(processes=n_workers) as p:
         for tokenization_result in p.imap(functools.partial(transform_, tokenizer), zip(all_sentences_chunked, keys)):
             queue.put(tokenization_result)
 
@@ -70,9 +70,9 @@ def on_demand_dataloader(key: rand.KeyArray, n_workers: int=None):
     if n_workers is None:
         n_workers = os.cpu_count()
 
-    queue = multiprocessing.Queue(maxsize=n_workers)
-
-    producer_proc = multiprocessing.Process(target=producer, args=(queue, n_workers, key))
+    ctx = multiprocessing.get_context('spawn')
+    queue = ctx.Queue(maxsize=n_workers)
+    producer_proc = ctx.Process(target=producer, args=(queue, n_workers, key))
     producer_proc.start()
 
     length = queue.get()
