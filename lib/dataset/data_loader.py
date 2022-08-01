@@ -14,7 +14,7 @@ from ..random.wrapper import key2seed, split_key
 
 def load_all_sentences():
     all_sentences = []
-    for filename in tqdm(glob(os.path.expanduser('~/.cache/dump2/*/*'))):
+    for filename in tqdm(glob(os.path.expanduser('~/.cache/dump2/*/*'))[:10]):
         with open(filename, encoding='utf-8') as f:
             for line in f:
                 all_sentences.append(line.rstrip('\n'))
@@ -67,7 +67,28 @@ def producer(queue: multiprocessing.Queue, n_epochs: int, n_workers: int, key: r
             for tokenization_result in p.imap(functools.partial(transform_, tokenizer), zip(all_sentences_chunked, subkeys)):
                 queue.put(tokenization_result)
 
-def on_demand_dataloader(key: rand.KeyArray, n_epochs: int, n_workers: int=Optional[None]):
+def data_loader(key: rand.KeyArray, n_epochs: int, n_workers: int=Optional[None]):
+    '''
+    An on-demand data loader.
+
+    Example:
+
+    ```python
+    from lib.dataset.data_loader import data_loader
+    from lib.random.wrapper import seed2key
+
+    if __name__ == '__main__':
+        key = seed2key(seed=42)
+        n_epochs = 4
+        n_workers = 32
+
+        data_iter = data_loader(key=key, n_epochs=n_epochs, n_workers=n_workers)
+
+        for _ in range(n_epochs):
+            for i, (src, mask_enc_1d, dst, mask_dec_1d) in enumerate(data_iter()):
+                print(i, tuple(map(lambda x: x.dtype, (src, mask_enc_1d, dst, mask_dec_1d))))
+    ```
+    '''
     if n_workers is None:
         n_workers = os.cpu_count()
 
