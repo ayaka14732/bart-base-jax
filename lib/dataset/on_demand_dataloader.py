@@ -14,7 +14,7 @@ from ..random.wrapper import key2seed, split_key
 
 def load_all_sentences():
     all_sentences = []
-    for filename in tqdm(glob('/home/clara/bart-base-jax/dump2/*/*')[:128]):  #  TODO: avoid hardcoded path
+    for filename in tqdm(glob('/home/clara/bart-base-jax/dump2/*/*')):  #  TODO: avoid hardcoded path
         with open(filename, encoding='utf-8') as f:
             for line in f:
                 all_sentences.append(line.rstrip('\n'))
@@ -32,9 +32,9 @@ def transform(tokenizer: PreTrainedTokenizer, sentences: List[str], key: rand.Ke
     y = tokenizer(distorted_sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True)
 
     src = x.input_ids.astype(np.int32)
-    mask_enc_1d = x.attention_mask
+    mask_enc_1d = x.attention_mask.astype(np.bool_)
     dst = y.input_ids.astype(np.int32)
-    mask_dec_1d = y.attention_mask
+    mask_dec_1d = y.attention_mask.astype(np.bool_)
 
     return src, mask_enc_1d, dst, mask_dec_1d
 
