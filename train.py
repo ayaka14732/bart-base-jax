@@ -1,7 +1,6 @@
 import functools
 import jax
 import jax.numpy as np
-import numpy as onp
 import optax
 import time
 import wandb
@@ -40,8 +39,6 @@ wandb.init(project='bart-pretraining', config={
     'n_epochs': n_epochs,
     'batch_size': batch_size,
     'learning_rate': learning_rate,
-    'vocab_size': vocab_size,
-    'pad_token_id': pad_token_id,
 })
 
 
@@ -68,26 +65,15 @@ def train_step(params, opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, la
 
     return params, opt_state, loss
 
-def device_split(arr):
+def device_split(a: np.ndarray) -> np.ndarray:
     '''Splits the first axis of `arr` evenly across the number of devices.'''
-    return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
-
-def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
-    mask_enc = device_split(np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None])
-    mask_dec = device_split(np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None])
-    mask_dec_enc = device_split(np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None])
-    return mask_enc, mask_dec, mask_dec_enc
+    batch_size, *shapes = a.shape
+    return a.reshape(n_devices, batch_size // n_devices, *shapes)
 
 def save_checkpoint(replicated_params) -> None:
     params = jax.tree_map(lambda x: x[0], replicated_params)
     filename = f'{wandb.run.name}.dat'
     save_params(params, filename)
-
-# TODO:
-# `data_loader` should yield
-# src, dst, mask_enc, mask_dec, mask_dec_enc, labels
-#
-# should be able to close the child processes (early stopping)
 
 def main():
     params = init_params()
@@ -105,29 +91,19 @@ def main():
 
         epoch_loss = 0.
 
-        for i, (src, mask_enc_1d, dst, mask_dec_1d) in enumerate(data_loader):
+        for i, (src, dst, mask_enc, mask_dec, mask_dec_enc, labels) in enumerate(data_loader):
             start_time = time.time()
-
-            labels = onp.hstack((dst[:, 1:], np.ones((len(batch), 1), dtype=np.int32) * pad_token_id))
 
             src = device_split(src)
             dst = device_split(dst)
-            labels = device_split(labels)
-
-            batch_mask_enc_1d = mask_enc_1d[batch]
-            batch_mask_dec_1d = mask_dec_1d[batch]
-
-            mask_enc = np.einsum('bi,bj->bij', batch_mask_enc_1d, batch_mask_enc_1d)[:, None]
-            mask_dec = np.tril(np.einsum('bi,bj->bij', batch_mask_dec_1d, batch_mask_dec_1d))[:, None]
-            mask_dec_enc = np.einsum('bi,bj->bij', batch_mask_dec_1d, batch_mask_enc_1d)[:, None]
-
             mask_enc = device_split(mask_enc)
             mask_dec = device_split(mask_dec)
             mask_dec_enc = device_split(mask_dec_enc)
+            labels = device_split(labels)
 
-            key, subkey = split_key(key, nums=9)
+            key, *subkeys = split_key(key, nums=9)
 
-            replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkey)
+            replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkeys)
 
             batch_loss = replicated_loss[0].item()
             assert not np.isnan(batch_loss)
