@@ -6,7 +6,7 @@ import optax
 import time
 import wandb
 
-from lib.dataset.data_loader import data_loader
+from lib.dataset.DataLoader import DataLoader
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
@@ -96,7 +96,7 @@ def main():
 
     key = seed2key(seed=42)
 
-    data_iter = data_loader(key=key, n_epochs=n_epochs, n_workers=8, limit=8)
+    data_loader = DataLoader(key=key, n_workers=8, limit=8)
 
     replicated_params = jax.device_put_replicated(params, devices)
     replicated_opt_state = jax.device_put_replicated(opt_state, devices)
@@ -105,7 +105,7 @@ def main():
 
         epoch_loss = 0.
 
-        for i, (src, mask_enc_1d, dst, mask_dec_1d) in enumerate(data_iter()):
+        for i, (src, mask_enc_1d, dst, mask_dec_1d) in enumerate(data_loader):
             start_time = time.time()
 
             labels = onp.hstack((dst[:, 1:], np.ones((len(batch), 1), dtype=np.int32) * pad_token_id))

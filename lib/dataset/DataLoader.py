@@ -38,8 +38,8 @@ def transform(tokenizer: PreTrainedTokenizer, sentences: List[str], key: rand.Ke
     keys = split_key(key, num=len(sentences))
     distorted_sentences = [distort_sentence(sentence, key=key) for sentence, key in zip(sentences, keys)]
 
-    x = tokenizer(sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True)
-    y = tokenizer(distorted_sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True)
+    x = tokenizer(sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True, add_prefix_space=True)
+    y = tokenizer(distorted_sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True, add_prefix_space=True)
 
     src = x.input_ids.astype(np.uint32)
     mask_enc_1d = x.attention_mask.astype(np.bool_)
@@ -81,6 +81,29 @@ def producer(queue: multiprocessing.Queue, n_workers: int, max_files: int, chunk
         for tokenization_result in pool.imap(functools.partial(transform_, tokenizer), zip(sentences_chunked, subkeys)):
             queue.put(tokenization_result)
 
+def make_data(src: np.ndarray, mask_enc_1d: np.ndarray, dst: np.ndarray, mask_dec_1d: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    # TODO: better name
+
+    # TODO: is this part correct?
+    labels = dst
+
+    batch_size, *_ = dst.shape
+
+    bos_id = 2
+
+    eoss = np.ones((batch_size, 1), dtype=np.uint32) * bos_id
+    dst = np.hstack((eoss, dst[:, 1:]))
+
+    trues = np.ones((batch_size, 1), dtype=np.bool_)
+    mask_dec_1d = np.hstack((trues, mask_dec_1d[:, 1:]))
+    # end todo
+
+    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+    mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
+    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+
+    return src, dst, mask_enc, mask_dec, mask_dec_enc, labels
+
 class DataLoader:
     '''On-demand data loader.'''
 
@@ -100,9 +123,9 @@ class DataLoader:
 
     def __iter__(self):
         get = self.queue.get
-        return (get() for _ in range(self.n_chunks))
+        return (make_data(*get()) for _ in range(self.n_chunks))
 
     def close(self):
-        print(f'Sending SIGTERM to {self.process.pid}...')
         os.kill(self.process.pid, signal.SIGTERM)
         self.process.terminate()
+        print('Data loader process terminated...')

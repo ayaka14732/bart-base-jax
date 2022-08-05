@@ -1,81 +1,31 @@
 # JAX Implementation of bart-base
 
-## 1. Motivation
+This project is a JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. The aim of this project is to demonstrate how Transformer-based language models can be implemented using JAX and trained on Cloud TPUs.
 
-This project is a JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. It is developed with two objectives in mind:
+This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer), while the code for this project is entirely written by myself.
 
-(1) To examine the consistency between description and implementation of the BART model;
+## News
 
-(2) To demonstrate how Transformer-based models can be implemented in JAX.
+**2022-03-27:** In addition to the regular implementation, I also implemented the model in a single line of Python code, by virtue of JAX's functional-style API. [[Twitter]](https://twitter.com/ayaka14732/status/1507955631109869574)
 
-In addition to the regular implementation, we also implemented the model [in a single line of Python code](https://twitter.com/ayaka14732/status/1507955631109869574), by virtue of JAX's functional-style API.
+## Environment Setup
 
-This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer). Nevertheless, the code is written entirely on my own.
-
-## 2. Environment Setup
-
-### 2.1. TPU
-
-(1) Create a Cloud TPU VM v3-8 with TPU software version v2-nightly20210914
-
-(2) Install Python 3.10
-
-(3) Create a virtual environment
+Set up TPU environment as described in [ayaka14732/tpu-starter](https://github.com/ayaka14732/tpu-starter). Then run the following commands:
 
 ```sh
 python3.10 -m venv ./venv
 . ./venv/bin/activate
-```
-
-(4) Install JAX with TPU support
-
-```sh
 pip install -U pip
 pip install -U wheel
 pip install "jax[tpu]==0.3.15" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-```
-
-(5) Install other required Python packages
-
-```sh
 pip install -r requirements.txt
 ```
 
-### 2.2. CPU
+## Model Architecture
 
-(1) Create a virtual environment
+Model
 
-```sh
-python3.10 -m venv ./venv
-. ./venv/bin/activate
-```
-
-(2) Install JAX
-
-```sh
-pip install "jax[cpu]==0.3.15"
-```
-
-(3) Install other required Python packages
-
-```sh
-pip install -r requirements.txt
-```
-
-## 3. Architecture
-
-- [Dropout function](lib/dropout.py)
-- [Layer Norm](lib/fwd_layer_norm.py)
-- [Embedding](lib/fwd_embedding.py)
-- [Linear](lib/fwd_linear.py)
-- [Attention](lib/fwd_attention.py)
-- [Transformer Encoder](lib/fwd_transformer_encoder.py)
-- [Transformer Decoder](lib/fwd_transformer_decoder.py)
-- [Transformer](lib/fwd_transformer.py)
-
-## 4. Parameters
-
-### 4.1. Overview
+## Model Parameters
 
 Parameter-related operations are implemented in the `lib/param_utils` directory. Notably, three functions, `flax2jax`, `pt2jax` and `jax2flax` are implemented, to allow any conversions between PyTorch, Flax and JAX implementation.
 
@@ -93,187 +43,9 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     model_pt = BartForConditionalGeneration.from_pretrained(tmpdirname, from_flax=True)
 ```
 
-### 4.2. Original checkpoint
+JAX parameters, see [param_format.txt](param_format.txt).
 
-The original model implementation and checkpoints are available in the [pytorch/fairseq](https://github.com/pytorch/fairseq/blob/main/examples/bart/README.md) library. The model parameters in Hugging Face Transformers are the same with the original checkpoint, so we only focus on the model parameters in Hugging Face Transformers (see below).
-
-### 4.3. Flax BART model in Hugging Face Transformers
-
-```
-shared
-    embedding (50265, 768)
-encoder
-    embed_positions
-        embedding (1026, 768)
-    layernorm_embedding
-        scale (768,)
-        bias (768,)
-    layers
-        0..5
-            self_attn
-                q_proj
-                    kernel (768, 768)
-                    bias (768,)
-                k_proj
-                    kernel (768, 768)
-                    bias (768,)
-                v_proj
-                    kernel (768, 768)
-                    bias (768,)
-                out_proj
-                    kernel (768, 768)
-                    bias (768,)
-            self_attn_layer_norm
-                scale (768,)
-                bias (768,)
-            fc1
-                kernel (768, 3072)
-                bias (3072,)
-            fc2
-                kernel (3072, 768)
-                bias (768,)
-            final_layer_norm
-                scale (768,)
-                bias (768,)
-decoder
-    embed_positions
-        embedding (1026, 768)
-    layernorm_embedding
-        scale (768,)
-        bias (768,)
-    layers
-        0..5
-            self_attn
-                q_proj
-                    kernel (768, 768)
-                    bias (768,)
-                k_proj
-                    kernel (768, 768)
-                    bias (768,)
-                v_proj
-                    kernel (768, 768)
-                    bias (768,)
-                out_proj
-                    kernel (768, 768)
-                    bias (768,)
-            self_attn_layer_norm
-                scale (768,)
-                bias (768,)
-            encoder_attn
-                q_proj
-                    kernel (768, 768)
-                    bias (768,)
-                k_proj
-                    kernel (768, 768)
-                    bias (768,)
-                v_proj
-                    kernel (768, 768)
-                    bias (768,)
-                out_proj
-                    kernel (768, 768)
-                    bias (768,)
-            encoder_attn_layer_norm
-                scale (768,)
-                bias (768,)
-            fc1
-                kernel (768, 3072)
-                bias (3072,)
-            fc2
-                kernel (3072, 768)
-                bias (768,)
-            final_layer_norm
-                scale (768,)
-                bias (768,)
-```
-
-### 4.4. JAX parameters in this project
-
-```
-embedding
-    embedding (50265, 768)
-encoder_embed_positions (1026, 768)
-decoder_embed_positions (1026, 768)
-encoder_embed_layer_norm
-    scale (768,)
-    bias (768,)
-decoder_embed_layer_norm
-    scale (768,)
-    bias (768,)
-encoder_layers
-    0..5
-        self_attn
-            q_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            k_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            v_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            ff
-                kernel (12, 64, 768)
-                bias (768,)
-        self_attn_layer_norm
-            scale (768,)
-            bias (768,)
-        ff0
-            kernel (768, 3072)
-            bias (3072,)
-        ff1
-            kernel (3072, 768)
-            bias (768,)
-        final_layer_norm
-            scale (768,)
-            bias (768,)
-decoder_layers
-    0..5
-        self_attn
-            q_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            k_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            v_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            ff
-                kernel (12, 64, 768)
-                bias (768,)
-        self_attn_layer_norm
-            scale (768,)
-            bias (768,)
-        cross_attn
-            q_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            k_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            v_proj
-                kernel (768, 12, 64)
-                bias (12, 64)
-            ff
-                kernel (12, 64, 768)
-                bias (768,)
-        cross_attn_layer_norm
-            scale (768,)
-            bias (768,)
-        ff0
-            kernel (768, 3072)
-            bias (3072,)
-        ff1
-            kernel (3072, 768)
-            bias (768,)
-        final_layer_norm
-            scale (768,)
-            bias (768,)
-```
-
-## 5. Training
-
-### 5.1. Dataset preparation
+## Dataset
 
 Extract Wikipedia dump by WikiExtractor, then use Bling Fire to split articles into sentences.
 
@@ -283,7 +55,7 @@ python -m wikiextractor.WikiExtractor enwiki-latest-pages-articles.xml.bz2 --jso
 python prepare_data.py
 ```
 
-### 5.2. Tokenization
+## Data Preprocessing
 
 The `[EOS]` token (`tokenizer.eos_token_id`) should be prepended before all sentences in `dst`.
 
@@ -295,6 +67,10 @@ Output: ['</s><s>A flower.</s><pad>', '</s><s>Some good sentences.</s>']
 Input IDs: [[0, 250, 14214, 4, 2, 1], [0, 6323, 205, 11305, 4, 2]]
 Output IDs: [[2, 0, 250, 14214, 4, 2, 1], [2, 0, 6323, 205, 11305, 4, 2]]
 ```
+
+- **src**: `[BOS]`, A, `[MSK]`, flower, `[EOS]`, `[PAD]`, `[PAD]`
+- **dst**: `[EOS]`, `[BOS]`, A, beautiful, flower, `[EOS]`, `[PAD]`
+- **label**: `[BOS]`, A, beautiful, flower, `[EOS]`, `[PAD]`, `[PAD]`
 
 <details>
 
@@ -319,9 +95,15 @@ print('Output IDs:', output.tolist())
 
 </details>
 
-## 6. Evaluation
+## Data Loader
 
-## 7. Generation
+On-demand data loader
+
+## Training
+
+## Evaluation
+
+## Generation
 
 Typical generation process of the BART model involves the input sequences and their masks. The model generates the output autoregressively.
 
@@ -329,13 +111,13 @@ While greedy decoding is the simplest generation algorithm for autoregressive la
 
 However, generation functions in the Hugging Face Transformers library are coupled with the implementation of their original models, which makes them inaccessible for customized models. To tackle this problem, we convert our model to a regular Hugging Face Transformer model.
 
-## 8. Inconsistency Analysis
+## Analysis of the Model Architecture
 
 We analyse the inconsistency between the description of the BART model in the literature and the actual BART implementation.
 
 In section 2.1 of the BART paper, the authors stated that BART uses the standard Transformer architecture except for the activation function and initialization. We examine other notable differences between BART and the standard Transformer.
 
-### 8.1. BART has learnable parameters for Layer Norm
+### BART has learnable parameters for Layer Norm
 
 Layer Norm is calculated by this formula:
 
@@ -347,11 +129,11 @@ In which $\gamma$ and $\beta$ are learnable parameters.
 
 In section 7 of the Transformer paper, it is said that the Transformer architecture is implemented in the [tensorflow/tensor2tensor](https://github.com/tensorflow/tensor2tensor) library. In the library, [`LayerNormalization`](https://github.com/tensorflow/tensor2tensor/blob/c81d770/tensor2tensor/models/research/residual_shuffle_exchange.py#L40-L41) does not contain learnable parameters.
 
-### 8.2. BART has extra bias parameters for _Q_, _K_ and _V_
+### BART has extra bias parameters for _Q_, _K_ and _V_
 
 Similar to Layer Norm, BART also has has extra bias parameters for $Q$, $K$ and $V$. It seems that the authors of the BART paper are unaware of this, since they refer $Q$, $K$ and $V$ as 'projection matrix' instead of 'linear layers' in the Section 3.4 of the BART paper.
 
-### 8.3. Positional encoding is learned rather than fixed
+### Positional encoding is learned rather than fixed
 
 In Section 3.5 of the Transformer paper, it is said that the positional encoding is fixed and is calculated by sine and cosine functions:
 
@@ -365,25 +147,25 @@ $$
 
 In BART, however, positional embedding is a learned parameter. The authors of BART seems to be aware of this, since they wrote in Section 3.4 of BART that they were updating the BART positional embeddings in the first training stage of machine translation.
 
-### 8.4. Positional encoding has an offset of 2
+### Positional encoding has an offset of 2
 
 In BART, the positional encoding has an offset of 2, which means that the 0-th token uses the second positional encoding, the first token uses the third positional encoding, an so on. The first two positions of the positional encoding is never used.
 
-### 8.5. BART uses tied word embeddings
+### BART uses tied word embeddings
 
 BART uses tied word embeddings on top of the output of the final layer of the decoder. In regular Transformer architecture, the layer is a linear layer used for classification. In BART, however, it is the transpose of the word embedding.
 
-### 8.6. BART has extra dropout after activation
+### BART has extra dropout after activation
 
 BART has extra dropout after activation, while Transformer do not have this.
 
-### 8.7. BART uses an additional decoder start token
+### BART uses an additional decoder start token
 
 TODO: Confirm that Transformer does not use this.
 
 Related: <https://stackoverflow.com/q/64904840>
 
-### 8.8. BART tokenizer encodes the first word of a sentence differently
+### BART tokenizer encodes the first word of a sentence differently
 
 ```python
 from transformers import BartTokenizer
@@ -397,15 +179,15 @@ TODO: Does Chinese BART have this issue?
 
 Related: <https://discuss.huggingface.co/t/bpe-tokenizers-and-spaces-before-words/475>
 
-## 9. Notes on Implementation
+## Notes on Implementation
 
 This section records the problems we encountered during my implementation of the BART model and the final solutions.
 
-### 9.1. bart-large has intrinsic problems
+### bart-large has intrinsic problems
 
 This issue is reported in [huggingface/transformers#15559](https://github.com/huggingface/transformers/issues/15559). As a consequence, we only focus on implementing bart-base in this project, and not bart-large.
 
-### 9.2. `np.std` and `torch.std` are different
+### `np.std` and `torch.std` are different
 
 ```python
 import torch
@@ -420,7 +202,7 @@ It is because in `np.std` the denominator is _n_, while in `torch.std` it is _n_
 
 However, for the standard deviation in Layer Norm, the denominator is always n in either PyTorch or NumPy.
 
-### 9.3. Computations on TPU are in low precision by default
+### Computations on TPU are in low precision by default
 
 JAX uses bfloat16 for matrix multiplication on TPU by default, even if the data type is float32. See [google/jax#9973](https://github.com/google/jax/issues/9973) for details.
 
@@ -436,7 +218,7 @@ print((a * b).item())  # 0.25039297342300415
 
 For neural network training, however, reducing the accuracy is worthwhile because it can significantly reduce the training time, according to Tom's comments in the above issue.
 
-### 9.4. Weight matrix of linear layer is transposed in PyTorch
+### Weight matrix of linear layer is transposed in PyTorch
 
 Weight matrix of linear layer is transposed in PyTorch, but not in Flax. Therefore, to convert model parameters between PyTorch and Flax, it is always needed to transpose the weight matrices.
 
@@ -462,9 +244,9 @@ print(linear.weight.shape)  # (5, 3), not (3, 5)
 
 This can cause sneaky bugs for bart-base, in which the _Q_, _K_, _V_ matrices are square matrices. If the matrices are not transposed, there will be no shape error, but the result will be totally incorrect.
 
-### 9.5. Layer Norm of PyTorch and Flax are slightly different
+### Layer Norm of PyTorch and Flax are slightly different
 
-### 9.6 Tokenizer
+### Tokenizer
 
 If train from scratch, always add `add_prefix_space=True` when initialise the tokenizer
 
