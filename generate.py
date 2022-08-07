@@ -6,7 +6,7 @@ from lib.param_utils.load_params import load_params
 from lib.model.fwd_embedding import fwd_embedding
 from lib.model.fwd_layer_norm import fwd_layer_norm
 from lib.model.fwd_transformer_encoder import fwd_transformer_encoder
-from lib.generator import Generator
+from lib.Generator import Generator
 
 def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
     # params

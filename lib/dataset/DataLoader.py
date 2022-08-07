@@ -68,7 +68,7 @@ def producer(queue: multiprocessing.Queue, n_workers: int, max_files: int, chunk
         sentences_ = sentences[:]
 
         if should_shuffle:
-            key, subkey = split_key(key, num=2)
+            key, subkey = split_key(key)
             seed = key2seed(subkey)
             rng = random.Random(seed)
             rng.shuffle(sentences_)
