@@ -257,7 +257,7 @@ Cannot have
 can cause sneaky bugs. Remember to check it before committing
 
 ```
-rand.PRNGKey > random.wrapper.key2seed
+rand.PRNGKey > random.wrapper.seed2key
 rand.split > random.wrapper.split_key
 42
 ```
