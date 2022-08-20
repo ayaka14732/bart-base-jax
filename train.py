@@ -46,7 +46,7 @@ def main():
 
     devices = jax.devices()
     n_devices = jax.device_count()
-    assert n_devices == 4
+    assert n_devices == 8
 
     n_epochs = 2
     batch_size = 16 * n_devices  # 28 * n_devices

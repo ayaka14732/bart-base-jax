@@ -1,31 +1,27 @@
-import flax.linen as fnn
 from itertools import accumulate, chain, repeat
 import jax
 import jax.numpy as np
 from jax.random import PRNGKey, split, uniform
 from operator import itemgetter
 
-from fwd_layer_norm import fwd_layer_norm
-
+# testing boilerplate
+from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+from lib.model.fwd_embedding import fwd_embedding
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
-
+# random key management
 seed = 42
 keys = map(itemgetter(0), accumulate(chain((split(PRNGKey(seed)),), repeat(None)), lambda acc, _: split(acc[1])))
 rand = lambda *shape: uniform(next(keys), shape)
 
-x = rand(3, 2, 5)
-scale = rand(5)
-bias = rand(5)
+vocab_size = 128
+embed_size = 3
 
-params = {'scale': scale, 'bias': bias}
+embedding = rand(vocab_size, embed_size)
+x = np.array([0, 3, 15])
 
-output = fwd_layer_norm(params, x)
+params = {'embedding': embedding}
 
-# Flax implementation
+output = fwd_embedding(params, x)
 
-model = fnn.LayerNorm(epsilon=1e-5)
-
-output_ = model.apply({'params': {'scale': scale, 'bias': bias}}, x)
-
-assert np.allclose(output, output_)
+assert output.shape == (len(x), embed_size)
