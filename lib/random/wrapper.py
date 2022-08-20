@@ -14,5 +14,8 @@ split_key.__doc__ = '''Same as `jax.random.split_key`, but always produces the r
 
 # distributions
 
+uniform = jax.jit(rand.uniform, static_argnums=(1, 2), backend='cpu')
+uniform.__doc__ = '''Same as `jax.random.uniform`, but always produces the result on CPU.'''
+
 bernoulli = jax.jit(rand.bernoulli, static_argnums=(2,), backend='cpu')
 bernoulli.__doc__ = '''Same as `jax.random.bernoulli`, but always produces the result on CPU.'''

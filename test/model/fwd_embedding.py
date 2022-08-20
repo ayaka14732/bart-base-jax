@@ -7,12 +7,14 @@ from operator import itemgetter
 # testing boilerplate
 from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from lib.model.fwd_embedding import fwd_embedding
+from lib.random.wrapper import seed2key, split_key, uniform
 # https://github.com/google/jax/issues/9973#issuecomment-1073579382
 jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 # random key management
+from itertools import accumulate, chain, repeat; from operator import itemgetter
 seed = 42
-keys = map(itemgetter(0), accumulate(chain((split(PRNGKey(seed)),), repeat(None)), lambda acc, _: split(acc[1])))
-rand = lambda *shape: uniform(next(keys), shape)
+keys = map(itemgetter(0), accumulate(chain((split_key(seed2key(seed)),), repeat(None)), lambda acc, _: split_key(acc[1])))
+rand = lambda *shape: uniform(next(keys), shape=shape)
 
 vocab_size = 128
 embed_size = 3
