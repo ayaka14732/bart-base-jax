@@ -16,9 +16,7 @@ from lib.training_temp import device_split
 
 vocab_size = 50265  # BartTokenizer.from_pretrained('facebook/bart-base').vocab_size
 pad_token_id = 1  # BartTokenizer.from_pretrained('facebook/bart-base').pad_token_id
-global_vars = {
-    'optimizer': None,
-}
+optimizer = None
 
 @jax.jit
 @jax.value_and_grad
@@ -36,7 +34,7 @@ def train_step(params, opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, la
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
 
-    updates, opt_state = global_vars['optimizer'].update(grads, opt_state, params)
+    updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
     return params, opt_state, loss
@@ -67,9 +65,9 @@ def main():
     key, subkey = split_key(key)
     params = init_params(key=subkey)
 
+    global optimizer
     optimizer = optax.adam(learning_rate=learning_rate)
     opt_state = optimizer.init(params)
-    global_vars['optimizer'] = optimizer
 
     replicated_params = jax.device_put_replicated(params, devices)
     replicated_opt_state = jax.device_put_replicated(opt_state, devices)
