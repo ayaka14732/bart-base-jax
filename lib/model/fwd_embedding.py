@@ -1,15 +1,16 @@
 import jax.numpy as np
+from jaxtyping import f as F, u32 as U32, PyTree, jaxtyped
+from typeguard import check_type, typechecked as typechecker
 
-from ..debug.log import log_shape
-
-def fwd_embedding(params: dict, x: np.ndarray) -> np.ndarray:
+@jaxtyped
+@typechecker
+def fwd_embedding(params: PyTree, x: U32['*dims']) -> F['*dims embed_size']:
     # params
     embedding: np.ndarray = params['embedding']  # array
 
-    log_shape('embedding', embedding)
+    check_type('embedding', embedding, F['vocab_size embed_size'])
 
     y = embedding[x]
-
-    log_shape('y', y)
+    check_type('y', y, F['*dims embed_size'])
 
     return y

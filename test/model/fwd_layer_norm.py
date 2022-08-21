@@ -21,7 +21,7 @@ bias = rand(5)
 
 params = {'scale': scale, 'bias': bias}
 
-output = fwd_layer_norm(params, x)
+output = fwd_layer_norm(params, x, eps=1e-5)
 
 # Flax implementation
 

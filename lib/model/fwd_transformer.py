@@ -1,5 +1,8 @@
+from jax._src.random import KeyArray
 import jax.numpy as np
 import jax.random as rand
+from jaxtyping import b as B, f as F, PyTree, jaxtyped
+from typeguard import check_type, typechecked as typechecker
 
 from .dropout import dropout
 from .fwd_layer_norm import fwd_layer_norm
@@ -7,7 +10,17 @@ from .fwd_embedding import fwd_embedding
 from .fwd_transformer_encoder import fwd_transformer_encoder
 from .fwd_transformer_decoder import fwd_transformer_decoder
 
-def fwd_transformer(params: dict, src: np.ndarray, dst: np.ndarray, mask_enc: np.ndarray, mask_dec: np.ndarray, mask_dec_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
+@jaxtyped
+@typechecker
+def fwd_transformer(
+    params: PyTree,
+    src: F['bs src_len d_model'],
+    dst: F['bs dst_len d_model'],
+    mask_enc: B['bs 1 src_len src_len'],
+    mask_dec: B['bs 1 dst_len dst_len'],
+    mask_dec_enc: B['bs 1 dst_len src_len'],
+    dropout_key: KeyArray=None
+) -> F['bs dst_len d_model']:
     # params
     embedding: dict = params['embedding']  # embedding
     encoder_embed_positions: np.ndarray = params['encoder_embed_positions']  # array

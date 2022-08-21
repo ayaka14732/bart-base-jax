@@ -1,13 +1,22 @@
+from jax._src.random import KeyArray
 import jax.nn as nn
-import jax.numpy as np
-import jax.random as rand
+from jaxtyping import b as B, f as F, PyTree, jaxtyped
+from typeguard import check_type, typechecked as typechecker
 
 from .dropout import dropout
 from .fwd_layer_norm import fwd_layer_norm
 from .fwd_linear import fwd_linear
 from .fwd_attention import fwd_attention
+from ..random.wrapper import split_key
 
-def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray, dropout_key: rand.KeyArray=None) -> np.ndarray:
+@jaxtyped
+@typechecker
+def fwd_transformer_encoder(
+    params: PyTree,
+    src: F['bs src_len d_model'],
+    mask_enc: B['bs 1 src_len src_len'],
+    dropout_key: KeyArray=None
+) -> F['bs src_len d_model']:
     # params
     self_attn: dict = params['self_attn']  # attention
     self_attn_layer_norm: dict = params['self_attn_layer_norm']  # layer norm
@@ -16,7 +25,7 @@ def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray,
     final_layer_norm: dict = params['final_layer_norm']  # layer norm
 
     if dropout_key is not None:
-        subkeys = rand.split(dropout_key, num=3)
+        subkeys = split_key(dropout_key, num=3)
 
     src_ = src
     t = fwd_attention(self_attn, src, src, mask_enc)
@@ -24,6 +33,7 @@ def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray,
         t = dropout(subkeys[0], t)
     t = t + src_
     t = fwd_layer_norm(self_attn_layer_norm, t)
+    check_type('t', t, F['bs src_len d_ff'])
 
     t_ = t
     t = fwd_linear(ff0, t)
@@ -35,4 +45,6 @@ def fwd_transformer_encoder(params: dict, src: np.ndarray, mask_enc: np.ndarray,
         t = dropout(subkeys[2], t)
     t = t + t_
     t = fwd_layer_norm(final_layer_norm, t)
+    check_type('t', t, F['bs src_len d_model'])
+
     return t
