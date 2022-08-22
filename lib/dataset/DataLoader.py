@@ -1,3 +1,4 @@
+from collections import namedtuple
 import functools
 from glob import glob
 import jax.numpy as np
@@ -14,6 +15,17 @@ from typing import Any, List, NoReturn, Optional, Tuple
 
 from .distort_sentence import distort_sentence
 from ..random.wrapper import key2seed, split_key
+
+Data = namedtuple('Data', (
+    'src',
+    'dst',
+    'mask_enc_1d',
+    'mask_dec_1d',
+    'mask_enc',
+    'mask_dec',
+    'mask_dec_enc',
+    'labels',
+))
 
 def load_sentences(max_files: Optional[int]=None):
     filenames = glob(os.path.expanduser('~/.cache/dump2/*/*'))
@@ -52,14 +64,14 @@ def transform_(tokenizer: PreTrainedTokenizer, sentences_key: Tuple[List[str], r
     sentences, key = sentences_key
     return transform(tokenizer, sentences, key)
 
-def producer(queue: multiprocessing.Queue, n_workers: int, max_files: int, chunk_size: int, key: rand.KeyArray, should_shuffle: bool) -> NoReturn:
+def producer(queue: multiprocessing.Queue, n_workers: int, max_files: int, batch_size: int, key: rand.KeyArray, should_shuffle: bool) -> NoReturn:
     ctx = multiprocessing.get_context('spawn')  # TODO: can we change this to fork?
     pool = ctx.Pool(processes=n_workers)
     signal.signal(signal.SIGTERM, lambda *_: pool.terminate() or sys.exit())
 
     sentences = load_sentences(max_files=max_files)
     n_sentences = len(sentences)
-    n_chunks = math.ceil(n_sentences / chunk_size)
+    n_chunks = math.ceil(n_sentences / batch_size)
     queue.put(n_chunks)
 
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
@@ -73,7 +85,7 @@ def producer(queue: multiprocessing.Queue, n_workers: int, max_files: int, chunk
             rng = random.Random(seed)
             rng.shuffle(sentences_)
 
-        sentences_chunked = chunks(sentences_, chunk_size=chunk_size)
+        sentences_chunked = chunks(sentences_, chunk_size=batch_size)
         assert len(sentences_chunked) == n_chunks
         print(f'INFO: Successfully split into {n_chunks} chunks.')
 
@@ -102,17 +114,19 @@ def make_data(src: np.ndarray, mask_enc_1d: np.ndarray, dst: np.ndarray, mask_de
     mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
     mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
-    return src, dst, mask_enc, mask_dec, mask_dec_enc, labels
+    # TODO: flexible batch size
+
+    return Data(src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels)
 
 class DataLoader:
     '''On-demand data loader.'''
 
-    def __init__(self, key: rand.KeyArray, n_workers: Optional[int]=None, max_files: Optional[int]=None, queue_size: int=128, chunk_size: int=1024, should_shuffle=True) -> None:
+    def __init__(self, key: rand.KeyArray, n_workers: Optional[int]=None, max_files: Optional[int]=None, queue_size: int=128, batch_size: int=1024, should_shuffle=True) -> None:
         ctx = multiprocessing.get_context('spawn')
 
         queue = ctx.Queue(maxsize=queue_size)
 
-        process = ctx.Process(target=producer, args=(queue, n_workers, max_files, chunk_size, key, should_shuffle))
+        process = ctx.Process(target=producer, args=(queue, n_workers, max_files, batch_size, key, should_shuffle))
         process.start()
 
         n_chunks = queue.get()

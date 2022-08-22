@@ -20,16 +20,16 @@ optimizer = None
 
 @jax.jit
 @jax.value_and_grad
-def train_forward(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
-    loss = cross_entropy_loss(logits, labels, mask=mask_dec, num_classes=vocab_size) / len(labels)
+    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d, n_classes=vocab_size) / len(labels)
     return loss
 
 @functools.partial(jax.pmap, axis_name='num_devices')
-def train_step(params, opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
-    loss, grads = train_forward(params, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
+def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+    loss, grads = train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
 
     grads = jax.lax.pmean(grads, axis_name='num_devices')
     loss = jax.lax.pmean(loss, axis_name='num_devices')
@@ -60,7 +60,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(key=subkey, n_workers=12, max_files=8)
+    data_loader = DataLoader(key=subkey, n_workers=12, max_files=8, batch_size=64)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
@@ -75,18 +75,19 @@ def main():
     for _ in range(n_epochs):
         epoch_loss = 0.
 
-        for n_batches, (src, dst, mask_enc, mask_dec, mask_dec_enc, labels) in enumerate(data_loader):
+        for n_batches, data in enumerate(data_loader):
             start_time = time.time()
 
-            src = device_split(src, n_devices)
-            dst = device_split(dst, n_devices)
-            mask_enc = device_split(mask_enc, n_devices)
-            mask_dec = device_split(mask_dec, n_devices)
-            mask_dec_enc = device_split(mask_dec_enc, n_devices)
-            labels = device_split(labels, n_devices)
+            src = device_split(data.src, n_devices)
+            dst = device_split(data.dst, n_devices)
+            mask_dec_1d = device_split(data.mask_dec_1d, n_devices)
+            mask_enc = device_split(data.mask_enc, n_devices)
+            mask_dec = device_split(data.mask_dec, n_devices)
+            mask_dec_enc = device_split(data.mask_dec_enc, n_devices)
+            labels = device_split(data.labels, n_devices)
 
             key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)
-            replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkeys)
+            replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkeys)
 
             batch_loss = replicated_loss[0].item()
             assert not np.isnan(batch_loss)

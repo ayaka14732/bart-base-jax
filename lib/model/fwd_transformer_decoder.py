@@ -1,5 +1,6 @@
 from jax._src.random import KeyArray
 import jax.nn as nn
+import jax.random as rand
 from jaxtyping import b as B, f as F, PyTree, jaxtyped
 from typeguard import check_type, typechecked as typechecker
 
@@ -7,7 +8,6 @@ from .dropout import dropout
 from .fwd_layer_norm import fwd_layer_norm
 from .fwd_linear import fwd_linear
 from .fwd_attention import fwd_attention
-from ..random.wrapper import split_key
 
 @jaxtyped
 @typechecker
@@ -29,7 +29,7 @@ def fwd_transformer_decoder(
     final_layer_norm: PyTree = params['final_layer_norm']  # layer norm
 
     if dropout_key is not None:
-        subkeys = split_key(dropout_key, num=4)
+        subkeys = rand.split(dropout_key, num=4)
 
     dst_ = dst
     dst = fwd_attention(self_attn, dst, dst, mask_dec)

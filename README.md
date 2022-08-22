@@ -121,6 +121,8 @@ Cannot have
 
 can cause sneaky bugs. Remember to check it before committing
 
+not necessarily true!
+
 ```
 rand.PRNGKey > random.wrapper.seed2key
 rand.split > random.wrapper.split_key

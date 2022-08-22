@@ -1,7 +1,7 @@
 from jax._src.random import KeyArray
 import jax.numpy as np
 import jax.random as rand
-from jaxtyping import b as B, f as F, PyTree, jaxtyped
+from jaxtyping import b as B, f as F, u32 as U32, PyTree, jaxtyped
 from typeguard import check_type, typechecked as typechecker
 
 from .dropout import dropout
@@ -14,8 +14,8 @@ from .fwd_transformer_decoder import fwd_transformer_decoder
 @typechecker
 def fwd_transformer(
     params: PyTree,
-    src: F['bs src_len d_model'],
-    dst: F['bs dst_len d_model'],
+    src: U32['bs src_len'],
+    dst: U32['bs dst_len'],
     mask_enc: B['bs 1 src_len src_len'],
     mask_dec: B['bs 1 dst_len dst_len'],
     mask_dec_enc: B['bs 1 dst_len src_len'],
