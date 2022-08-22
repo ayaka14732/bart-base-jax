@@ -75,16 +75,20 @@ def main():
     for _ in range(n_epochs):
         epoch_loss = 0.
 
-        for n_batches, data in enumerate(data_loader):
+        for n_batches, batch in enumerate(data_loader):
             start_time = time.time()
 
-            src = device_split(data.src, n_devices)
-            dst = device_split(data.dst, n_devices)
-            mask_dec_1d = device_split(data.mask_dec_1d, n_devices)
-            mask_enc = device_split(data.mask_enc, n_devices)
-            mask_dec = device_split(data.mask_dec, n_devices)
-            mask_dec_enc = device_split(data.mask_dec_enc, n_devices)
-            labels = device_split(data.labels, n_devices)
+            # TODO:
+            # 1. move these lines inside
+            # 2. non-divisible tail problem
+            # 3. rearrange after getting arrays from tokenize worker
+            src = device_split(batch.src, n_devices)
+            dst = device_split(batch.dst, n_devices)
+            mask_dec_1d = device_split(batch.mask_dec_1d, n_devices)
+            mask_enc = device_split(batch.mask_enc, n_devices)
+            mask_dec = device_split(batch.mask_dec, n_devices)
+            mask_dec_enc = device_split(batch.mask_dec_enc, n_devices)
+            labels = device_split(batch.labels, n_devices)
 
             key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)
             replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkeys)
