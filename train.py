@@ -12,8 +12,6 @@ from lib.preprocessing.DataLoader import DataLoader
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-from lib.training_temp import device_split
-
 vocab_size = 50265  # BartTokenizer.from_pretrained('facebook/bart-base').vocab_size
 pad_token_id = 1  # BartTokenizer.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
@@ -60,7 +58,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(key=subkey, n_workers=12, max_files=8, batch_size=64)
+    data_loader = DataLoader(key=subkey, n_workers=12, max_files=8, batch_size=64, n_devices=n_devices)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
@@ -79,19 +77,22 @@ def main():
             start_time = time.time()
 
             # TODO:
-            # 1. move these lines inside
             # 2. non-divisible tail problem
             # 3. rearrange after getting arrays from tokenize worker
-            src = device_split(batch.src, n_devices)
-            dst = device_split(batch.dst, n_devices)
-            mask_dec_1d = device_split(batch.mask_dec_1d, n_devices)
-            mask_enc = device_split(batch.mask_enc, n_devices)
-            mask_dec = device_split(batch.mask_dec, n_devices)
-            mask_dec_enc = device_split(batch.mask_dec_enc, n_devices)
-            labels = device_split(batch.labels, n_devices)
 
             key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)
-            replicated_params, replicated_opt_state, replicated_loss = train_step(replicated_params, replicated_opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=subkeys)
+            replicated_params, replicated_opt_state, replicated_loss = train_step(
+                replicated_params,
+                replicated_opt_state,
+                batch.src,
+                batch.dst,
+                batch.mask_dec_1d,
+                batch.mask_enc,
+                batch.mask_dec,
+                batch.mask_dec_enc,
+                batch.labels,
+                dropout_key=subkeys,
+            )
 
             batch_loss = replicated_loss[0].item()
             assert not np.isnan(batch_loss)
