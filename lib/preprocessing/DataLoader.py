@@ -29,9 +29,9 @@ Data = namedtuple('Data', (
 ))
 
 def load_sentences(max_files: Optional[int]=None):
-    filenames = glob(expanduser('~/.cache/dump2/*/*'))
+    filenames = glob(expanduser('~/.bart-base-jax/enwiki/dump2/*/*'))
     if not filenames:
-        raise ValueError('Cannot find the dataset in ~/.cache/dump2.')
+        raise ValueError('Cannot find the dataset in ~/.bart-base-jax/enwiki/dump2.')
     if max_files is not None:
         filenames = filenames[:max_files]
 
