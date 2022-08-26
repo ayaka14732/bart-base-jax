@@ -1,6 +1,6 @@
 from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from lib.dataset.DataLoader import DataLoader
+from lib.preprocessing.DataLoader import DataLoader
 from lib.random.wrapper import seed2key
 
 if __name__ == '__main__':

@@ -5,10 +5,10 @@ import optax
 import time
 import wandb
 
-from lib.dataset.DataLoader import DataLoader
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
+from lib.preprocessing.DataLoader import DataLoader
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
