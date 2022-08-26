@@ -5,7 +5,8 @@ import jax.numpy as np
 import jax.random as rand
 import math
 import multiprocessing
-import os
+from os import kill
+from os.path import expanduser
 import random
 import signal
 import sys
@@ -28,7 +29,7 @@ Data = namedtuple('Data', (
 ))
 
 def load_sentences(max_files: Optional[int]=None):
-    filenames = glob(os.path.expanduser('~/.cache/dump2/*/*'))
+    filenames = glob(expanduser('~/.cache/dump2/*/*'))
     if not filenames:
         raise ValueError('Cannot find the dataset in ~/.cache/dump2.')
     if max_files is not None:
@@ -140,6 +141,6 @@ class DataLoader:
         return (make_data(*get()) for _ in range(self.n_chunks))
 
     def close(self):
-        os.kill(self.process.pid, signal.SIGTERM)
+        kill(self.process.pid, signal.SIGTERM)
         self.process.terminate()
         print('Data loader process terminated...')
