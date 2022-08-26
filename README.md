@@ -60,7 +60,7 @@ Split English Wikipedia into sentences.
 python prepare_dataset.py
 ```
 
-The processing took 259s to complete with 240 CPUs. The size of the directory is about 15 GiB.
+On Cloud TPU v3-8, the processing takes 15m18s. On Cloud TPU v4-8, it takes 4m19s. The size of the directory is about 15 GiB.
 
 ## Data Preprocessing
 
