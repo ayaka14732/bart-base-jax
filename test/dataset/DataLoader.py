@@ -3,7 +3,7 @@ from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve
 
 import jax
 
-from lib.preprocessing.DataLoader import DataLoader
+from lib.dataloader.DataLoader import DataLoader
 from lib.random.wrapper import seed2key
 
 jax.config.update('jax_platforms', 'cpu')

@@ -2,7 +2,7 @@ import numpy as onp
 from transformers import PreTrainedTokenizer
 from typing import List, Tuple
 
-from .distort_sentence import distort_sentence
+from ..preprocessing.distort_sentence import distort_sentence
 from ..random.wrapper import KeyArray, split_key
 
 def tokenization_worker_inner(tokenizer: PreTrainedTokenizer, sentences: List[str], key: KeyArray) -> onp.ndarray:
