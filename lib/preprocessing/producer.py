@@ -1,7 +1,6 @@
 # TODO: better name
 
 import functools
-from jax._src.random import KeyArray
 import math
 import multiprocessing
 import random
@@ -13,7 +12,7 @@ from typing import Any, List, Literal, NoReturn, Union
 from .tokenization_worker import tokenization_worker
 from ..dataset.dummy.load_dummy import load_dummy
 from ..dataset.enwiki.load_enwiki import load_enwiki
-from ..random.wrapper import key2seed, split_key
+from ..random.wrapper import KeyArray, key2seed, split_key
 
 def chunks(lst: List[Any], chunk_size: int) -> List[List[Any]]:
     '''Yield successive n-sized chunks from lst.'''

@@ -1,9 +1,7 @@
-from jax._src.random import KeyArray
-import jax.random as rand
 from transformers import BartConfig, FlaxBartModel
 
 from .flax2jax import flax2jax
-from ..random.wrapper import key2seed
+from ..random.wrapper import KeyArray, key2seed
 
 config = BartConfig.from_pretrained('facebook/bart-base')
 

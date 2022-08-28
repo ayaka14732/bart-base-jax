@@ -1,4 +1,3 @@
-from jax._src.random import KeyArray
 import jax.numpy as np
 import jax.random as rand
 from jaxtyping import b as B, f as F, u32 as U32, PyTree, jaxtyped
@@ -9,6 +8,7 @@ from .fwd_layer_norm import fwd_layer_norm
 from .fwd_embedding import fwd_embedding
 from .fwd_transformer_encoder import fwd_transformer_encoder
 from .fwd_transformer_decoder import fwd_transformer_decoder
+from ..random.wrapper import KeyArray
 
 @jaxtyped
 @typechecker

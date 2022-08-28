@@ -1,6 +1,4 @@
-from jax._src.random import KeyArray
-
-from lib.random.wrapper import bernoulli
+from lib.random.wrapper import KeyArray, bernoulli
 
 def distort_sentence(sentence: str, key: KeyArray, keep_rate: float=0.8) -> str:
     '''

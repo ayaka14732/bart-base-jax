@@ -1,5 +1,4 @@
 from collections import namedtuple
-from jax._src.random import KeyArray
 import multiprocessing
 import numpy as onp
 from os import kill
@@ -8,6 +7,7 @@ from typing import Optional
 
 from .device_split import device_split
 from .producer import producer
+from ..random.wrapper import KeyArray
 
 Data = namedtuple('Data', (
     'src',

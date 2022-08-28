@@ -135,7 +135,7 @@ not necessarily true!
 ```
 rand.PRNGKey > random.wrapper.seed2key
 rand.split > random.wrapper.split_key
-rand.KeyArray > from jax._src.random import KeyArray
+rand.KeyArray > lib.random.wrapper.KeyArray
 42
 ```
 

@@ -1,4 +1,3 @@
-from jax._src.random import KeyArray
 import jax.nn as nn
 import jax.random as rand
 from jaxtyping import b as B, f as F, PyTree, jaxtyped
@@ -8,6 +7,7 @@ from .dropout import dropout
 from .fwd_layer_norm import fwd_layer_norm
 from .fwd_linear import fwd_linear
 from .fwd_attention import fwd_attention
+from ..random.wrapper import KeyArray
 
 @jaxtyped
 @typechecker

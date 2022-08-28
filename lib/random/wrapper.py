@@ -1,4 +1,5 @@
 import jax
+from jax._src.random import KeyArray
 import jax.numpy as np
 import jax.random as rand
 

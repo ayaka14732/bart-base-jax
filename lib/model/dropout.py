@@ -1,7 +1,8 @@
-from jax._src.random import KeyArray
 import jax.random as rand
 from jaxtyping import Array, jaxtyped
 from typeguard import typechecked as typechecker
+
+from ..random.wrapper import KeyArray
 
 @jaxtyped
 @typechecker
