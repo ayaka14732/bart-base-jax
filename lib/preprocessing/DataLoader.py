@@ -1,12 +1,10 @@
 from collections import namedtuple
-import jax.numpy as np
-import jax.random as rand
-from jaxtyping import Array
+from jax._src.random import KeyArray
 import multiprocessing
 import numpy as onp
 from os import kill
 import signal
-from typing import Optional, Tuple
+from typing import Optional
 
 from .device_split import device_split
 from .producer import producer
@@ -58,7 +56,7 @@ def make_data(src: onp.ndarray, mask_enc_1d: onp.ndarray, dst: onp.ndarray, mask
 class DataLoader:
     '''On-demand data loader.'''
 
-    def __init__(self, key: rand.KeyArray, dataset: str, n_workers: Optional[int]=None, queue_size: int=128, batch_size: int=1024, should_shuffle=True) -> None:
+    def __init__(self, key: KeyArray, dataset: str, n_workers: Optional[int]=None, queue_size: int=128, batch_size: int=1024, should_shuffle=True) -> None:
         ctx = multiprocessing.get_context('spawn')
 
         queue = ctx.Queue(maxsize=queue_size)

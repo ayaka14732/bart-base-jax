@@ -1,8 +1,8 @@
-import jax.random as rand
+from jax._src.random import KeyArray
 
 from lib.random.wrapper import bernoulli
 
-def distort_sentence(sentence: str, key: rand.KeyArray, keep_rate: float=0.8) -> str:
+def distort_sentence(sentence: str, key: KeyArray, keep_rate: float=0.8) -> str:
     '''
     TODO: Change to a more complicated distort method.
     '''
