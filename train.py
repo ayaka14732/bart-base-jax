@@ -42,14 +42,13 @@ def main():
 
     devices = jax.devices()
     n_devices = jax.device_count()
-    assert n_devices == 8
+    print('Number of devices:', n_devices)
 
     n_epochs = 2
     batch_size = 16 * n_devices  # 28 * n_devices
     learning_rate = 0.023
 
     wandb.init(project='bart-pretraining', config={
-        'n_devices': n_devices,
         'n_epochs': n_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
@@ -58,7 +57,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(key=subkey, n_workers=12, max_files=8, batch_size=64, n_devices=n_devices)
+    data_loader = DataLoader(key=subkey, dataset='dummy', n_workers=12, batch_size=64)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)

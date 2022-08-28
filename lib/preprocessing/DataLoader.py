@@ -1,7 +1,9 @@
 from collections import namedtuple
 import jax.numpy as np
 import jax.random as rand
+from jaxtyping import Array
 import multiprocessing
+import numpy as onp
 from os import kill
 import signal
 from typing import Optional, Tuple
@@ -20,7 +22,7 @@ Data = namedtuple('Data', (
     'labels',
 ))
 
-def make_data(src: np.ndarray, mask_enc_1d: np.ndarray, dst: np.ndarray, mask_dec_1d: np.ndarray, n_devices: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def make_data(src: onp.ndarray, mask_enc_1d: onp.ndarray, dst: onp.ndarray, mask_dec_1d: onp.ndarray) -> Data:
     # TODO: better name
 
     # TODO: is this part correct?
@@ -30,50 +32,49 @@ def make_data(src: np.ndarray, mask_enc_1d: np.ndarray, dst: np.ndarray, mask_de
 
     bos_id = 2
 
-    eoss = np.ones((batch_size, 1), dtype=np.uint32) * bos_id
-    dst = np.hstack((eoss, dst[:, 1:]))
+    eoss = onp.ones((batch_size, 1), dtype=onp.uint32) * bos_id
+    dst = onp.hstack((eoss, dst[:, 1:]))
 
-    trues = np.ones((batch_size, 1), dtype=np.bool_)
-    mask_dec_1d = np.hstack((trues, mask_dec_1d[:, 1:]))
+    trues = onp.ones((batch_size, 1), dtype=onp.bool_)
+    mask_dec_1d = onp.hstack((trues, mask_dec_1d[:, 1:]))
     # end todo
 
-    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-    mask_dec = np.tril(np.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+    mask_enc = onp.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+    mask_dec = onp.tril(onp.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
+    mask_dec_enc = onp.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
     # TODO: flexible batch size
 
-    src = device_split(src, n_devices)
-    dst = device_split(dst, n_devices)
-    mask_dec_1d = device_split(mask_dec_1d, n_devices)
-    mask_enc = device_split(mask_enc, n_devices)
-    mask_dec = device_split(mask_dec, n_devices)
-    mask_dec_enc = device_split(mask_dec_enc, n_devices)
-    labels = device_split(labels, n_devices)
+    src = device_split(src)
+    dst = device_split(dst)
+    mask_dec_1d = device_split(mask_dec_1d)
+    mask_enc = device_split(mask_enc)
+    mask_dec = device_split(mask_dec)
+    mask_dec_enc = device_split(mask_dec_enc)
+    labels = device_split(labels)
 
     return Data(src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels)
 
 class DataLoader:
     '''On-demand data loader.'''
 
-    def __init__(self, key: rand.KeyArray, n_devices: int, n_workers: Optional[int]=None, max_files: Optional[int]=None, queue_size: int=128, batch_size: int=1024, should_shuffle=True) -> None:
+    def __init__(self, key: rand.KeyArray, dataset: str, n_workers: Optional[int]=None, queue_size: int=128, batch_size: int=1024, should_shuffle=True) -> None:
         ctx = multiprocessing.get_context('spawn')
 
         queue = ctx.Queue(maxsize=queue_size)
 
-        process = ctx.Process(target=producer, args=(queue, n_workers, max_files, batch_size, key, should_shuffle))
+        process = ctx.Process(target=producer, args=(queue, dataset, n_workers, batch_size, key, should_shuffle))
         process.start()
 
         n_chunks = queue.get()
 
-        self.n_devices = n_devices
         self.n_chunks = n_chunks
         self.queue = queue
         self.process = process
 
     def __iter__(self):
         get = self.queue.get
-        return (make_data(*get(), n_devices=self.n_devices) for _ in range(self.n_chunks))
+        return (make_data(*get()) for _ in range(self.n_chunks))
 
     def close(self):
         kill(self.process.pid, signal.SIGTERM)

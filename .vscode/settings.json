@@ -16,6 +16,7 @@
         "ndarray",
         "optax",
         "relu",
+        "sharded",
         "stax",
         "tqdm",
         "trange",

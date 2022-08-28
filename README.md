@@ -21,6 +21,8 @@ pip install "jax[tpu]==0.3.16" -f https://storage.googleapis.com/jax-releases/li
 pip install -r requirements.txt
 ```
 
+To setup in CUDA environment, simply change `[tpu]` in the above command to `[cuda]`.
+
 ## Model Architecture
 
 TODO: See `lib/model`.
