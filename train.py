@@ -107,7 +107,5 @@ def main():
         filename = f'{wandb.run.name}.dat'
         save_params(params, filename)
 
-    data_loader.close()
-
 if __name__ == '__main__':
     main()
