@@ -1,12 +1,9 @@
 import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_force_host_platform_device_count=8'
+import jax; jax.config.update('jax_platforms', 'cpu')
 from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-
-import jax
 
 from lib.dataloader.dataloader import dataloader
 from lib.random.wrapper import seed2key
-
-jax.config.update('jax_platforms', 'cpu')
 
 if __name__ == '__main__':
     key = seed2key(42)
@@ -23,3 +20,4 @@ if __name__ == '__main__':
             batch.mask_dec_enc.shape,
             batch.labels.shape,
         )
+        print([buffer.device() for buffer in batch.src.device_buffers])

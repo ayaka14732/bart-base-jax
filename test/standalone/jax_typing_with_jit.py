@@ -1,9 +1,8 @@
-import jax
+import jax; jax.config.update('jax_platforms', 'cpu'); jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
+
 import jax.numpy as np
 from jaxtyping import f as F, jaxtyped
 from typeguard import check_type, typechecked as typechecker
-
-jax.config.update('jax_platforms', 'cpu')
 
 @jax.jit
 @jaxtyped
