@@ -1,5 +1,8 @@
+# TODO Remove this on TPU and GPU
+import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_force_host_platform_device_count=8'
+import jax; jax.config.update('jax_platforms', 'cpu')
+
 import functools
-import jax
 import jax.numpy as np
 import optax
 import time
@@ -57,7 +60,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(key=subkey, dataset='dummy', n_workers=12, batch_size=64)
+    data_loader = DataLoader(dataset='dummy', key=subkey, batch_size=64, n_workers=12)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
@@ -75,11 +78,7 @@ def main():
         for n_batches, batch in enumerate(data_loader):
             start_time = time.time()
 
-            # TODO:
-            # 2. non-divisible tail problem
-            # 3. rearrange after getting arrays from tokenize worker
-
-            key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)
+            key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)  # force `subkeys` to be an array instead of a list
             replicated_params, replicated_opt_state, replicated_loss = train_step(
                 replicated_params,
                 replicated_opt_state,
