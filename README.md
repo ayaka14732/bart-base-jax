@@ -137,6 +137,7 @@ rand.PRNGKey > random.wrapper.seed2key
 rand.split > random.wrapper.split_key
 rand.KeyArray > lib.random.wrapper.KeyArray
 42
+...; del key
 ```
 
 `~/.cache/dump2`

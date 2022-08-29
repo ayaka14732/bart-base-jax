@@ -1,11 +1,15 @@
 import numpy as onp
-from transformers import PreTrainedTokenizer
+from transformers import BartTokenizer
 from typing import List, Tuple
 
 from ..preprocessing.distort_sentence import distort_sentence
 from ..random.wrapper import KeyArray, split_key
 
-def tokenization_worker_inner(tokenizer: PreTrainedTokenizer, sentences: List[str], key: KeyArray) -> onp.ndarray:
+def tokenization_worker_inner(sentences: List[str], key: KeyArray) -> onp.ndarray:
+    global tokenizer
+    if 'tokenizer' not in globals():
+        tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+
     keys = split_key(key, num=len(sentences))
     distorted_sentences = [distort_sentence(sentence, key=key) for sentence, key in zip(sentences, keys)]
 
@@ -19,6 +23,6 @@ def tokenization_worker_inner(tokenizer: PreTrainedTokenizer, sentences: List[st
 
     return src, mask_enc_1d, dst, mask_dec_1d
 
-def tokenization_worker(tokenizer: PreTrainedTokenizer, sentences_key: Tuple[List[str], KeyArray]) -> onp.ndarray:
+def tokenization_worker(sentences_key: Tuple[List[str], KeyArray]) -> onp.ndarray:
     sentences, key = sentences_key
-    return tokenization_worker_inner(tokenizer, sentences, key)
+    return tokenization_worker_inner(sentences, key)

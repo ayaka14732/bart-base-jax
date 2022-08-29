@@ -3,7 +3,7 @@ from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve
 
 import jax
 
-from lib.dataloader.DataLoader import DataLoader
+from lib.dataloader.dataloader import dataloader
 from lib.random.wrapper import seed2key
 
 jax.config.update('jax_platforms', 'cpu')
@@ -11,7 +11,7 @@ jax.config.update('jax_platforms', 'cpu')
 if __name__ == '__main__':
     key = seed2key(42)
 
-    data_loader = DataLoader(key=key, dataset='dummy', n_workers=24)
+    data_loader = dataloader(dataset='dummy', batch_size=48, key=key, n_workers=32)
     for n_batches, batch in enumerate(data_loader):
         print(
             batch.src.shape,
@@ -23,4 +23,3 @@ if __name__ == '__main__':
             batch.mask_dec_enc.shape,
             batch.labels.shape,
         )
-    data_loader.close()
