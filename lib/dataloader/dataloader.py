@@ -47,6 +47,7 @@ def make_data(src: onp.ndarray, mask_enc_1d: onp.ndarray, dst: onp.ndarray, mask
 
     src = device_split(src)
     dst = device_split(dst)
+    mask_enc_1d = device_split(mask_enc_1d)
     mask_dec_1d = device_split(mask_dec_1d)
     mask_enc = device_split(mask_enc)
     mask_dec = device_split(mask_dec)
