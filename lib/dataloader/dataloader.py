@@ -65,19 +65,19 @@ def dataloader(dataset: str, key: KeyArray, batch_size: int, n_workers: Optional
         'dummy': load_dummy,
     }[dataset]()
 
+    if should_shuffle:
+        key, subkey = split_key(key)
+        seed = key2seed(subkey)
+        rng = random.Random(seed)
+        rng.shuffle(sentences)
+
+    sentences_chunked = chunks(sentences, chunk_size=chunk_size)
+    n_sentences = len(sentences)
+    n_chunks = len(sentences_chunked)
+    print(f'INFO: Successfully split {n_sentences} sentences into {n_chunks} chunks.')
+
     ctx = multiprocessing.get_context('spawn')
     with ProcessPoolExecutor(max_workers=n_workers, mp_context=ctx) as executor:
-        if should_shuffle:
-            key, subkey = split_key(key)
-            seed = key2seed(subkey)
-            rng = random.Random(seed)
-            rng.shuffle(sentences)
-
-        sentences_chunked = chunks(sentences, chunk_size=chunk_size)
-        n_sentences = len(sentences)
-        n_chunks = len(sentences_chunked)
-        print(f'INFO: Successfully split {n_sentences} sentences into {n_chunks} chunks.')
-
         subkeys = split_key(key, num=n_chunks); del key
         results = executor.map(tokenization_worker, zip(sentences_chunked, subkeys))
 

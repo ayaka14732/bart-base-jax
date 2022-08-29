@@ -1,11 +1,17 @@
-import numpy as onp
+import jax
+import jax.numpy as np
 from transformers import BartTokenizer
 from typing import List, Tuple
 
 from ..preprocessing.distort_sentence import distort_sentence
 from ..random.wrapper import KeyArray, split_key
 
-def tokenization_worker_inner(sentences: List[str], key: KeyArray) -> onp.ndarray:
+def tokenization_worker(x) -> np.ndarray:
+    jax.config.update('jax_platforms', 'cpu')  # enforce CPU in subprocesses
+
+    # sentences: List[str], key: KeyArray
+    sentences, key = x
+
     global tokenizer
     if 'tokenizer' not in globals():
         tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
@@ -16,13 +22,9 @@ def tokenization_worker_inner(sentences: List[str], key: KeyArray) -> onp.ndarra
     x = tokenizer(sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True, add_prefix_space=True)
     y = tokenizer(distorted_sentences, return_tensors='np', max_length=256, padding='max_length', truncation=True, add_prefix_space=True)
 
-    src = x.input_ids.astype(onp.uint32)
-    mask_enc_1d = x.attention_mask.astype(onp.bool_)
-    dst = y.input_ids.astype(onp.uint32)
-    mask_dec_1d = y.attention_mask.astype(onp.bool_)
+    src = x.input_ids.astype(np.uint32)
+    mask_enc_1d = x.attention_mask.astype(np.bool_)
+    dst = y.input_ids.astype(np.uint32)
+    mask_dec_1d = y.attention_mask.astype(np.bool_)
 
     return src, mask_enc_1d, dst, mask_dec_1d
-
-def tokenization_worker(sentences_key: Tuple[List[str], KeyArray]) -> onp.ndarray:
-    sentences, key = sentences_key
-    return tokenization_worker_inner(sentences, key)
