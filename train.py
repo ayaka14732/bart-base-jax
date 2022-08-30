@@ -1,8 +1,5 @@
-# TODO Remove this on TPU and GPU
-import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_force_host_platform_device_count=8'
-import jax; jax.config.update('jax_platforms', 'cpu')
-
 import functools
+import jax
 import jax.numpy as np
 import optax
 import time
@@ -48,7 +45,7 @@ def main():
     print('Number of devices:', n_devices)
 
     n_epochs = 2
-    batch_size = 16 * n_devices  # 28 * n_devices
+    batch_size = 22 * n_devices  # 28 * n_devices
     learning_rate = 0.023
 
     wandb.init(project='bart-pretraining', config={
@@ -60,7 +57,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(dataset='dummy', key=subkey, batch_size=64, n_workers=12)
+    data_loader = DataLoader(dataset='enwiki', key=subkey, batch_size=batch_size, n_workers=50)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
