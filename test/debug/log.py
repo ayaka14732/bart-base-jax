@@ -14,6 +14,6 @@ with contextlib.redirect_stdout(f):
     log('bbbcUBxRLnhSxSXLNEcDAzgPMDKFnJCgoQKGUKcYdpcQLPfj')  # test `log`
     log_shape('arr', arr)  # test `log_shape`
 
-assert f.getvalue() == '''[log.py:16] bbbcUBxRLnhSxSXLNEcDAzgPMDKFnJCgoQKGUKcYdpcQLPfj
-[log.py:17] arr: (10, 10)
+assert f.getvalue() == '''[log.py:14] bbbcUBxRLnhSxSXLNEcDAzgPMDKFnJCgoQKGUKcYdpcQLPfj
+[log.py:15] arr: (10, 10)
 '''

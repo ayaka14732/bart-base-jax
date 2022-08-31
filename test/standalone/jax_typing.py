@@ -37,7 +37,7 @@ if __name__ == '__main__':
     f1(a, b)
     f2(a, b)
 
-    c = np.ones((21, 31, 41, 51, 61))
-    d = np.ones((31, 41, 61, 71, 81))
+    c = np.ones((3, 4, 5, 6, 7))
+    d = np.ones((4, 5, 7, 1, 2))
     f1(c, d)  # type annotations should not be validated across functions
     f2(c, d)
