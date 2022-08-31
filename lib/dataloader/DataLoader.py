@@ -1,11 +1,11 @@
 from collections import namedtuple
-from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
 import numpy as onp
 import random
 from typing import Any, List, Optional
 
 from .device_split import device_split
+from .ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from .tokenization_worker import tokenization_worker
 from ..dataset.dummy.load_dummy import load_dummy
 from ..dataset.enwiki.load_enwiki import load_enwiki
@@ -61,7 +61,7 @@ def chunks(lst: List[Any], chunk_size: int) -> List[List[Any]]:
     return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
 
 class DataLoader:
-    def __init__(self, dataset: str, key: KeyArray, batch_size: int, n_workers: Optional[int]=None, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
+    def __init__(self, dataset: str, key: KeyArray, batch_size: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
         sentences = {
             'enwiki': load_enwiki,
             'dummy': load_dummy,
@@ -71,6 +71,7 @@ class DataLoader:
         self.key = key
         self.batch_size = batch_size
         self.n_workers = n_workers
+        self.queue_size = queue_size
         self.chunk_size = chunk_size
         self.should_shuffle = should_shuffle
 
@@ -79,6 +80,7 @@ class DataLoader:
         key = self.key
         batch_size = self.batch_size
         n_workers = self.n_workers
+        queue_size = self.queue_size
         chunk_size = self.chunk_size
         should_shuffle = self.should_shuffle
 
@@ -94,7 +96,7 @@ class DataLoader:
         print(f'INFO: Successfully split {n_sentences} sentences into {n_chunks} chunks.')
 
         ctx = multiprocessing.get_context('spawn')
-        with ProcessPoolExecutor(max_workers=n_workers, mp_context=ctx) as executor:
+        with ProcessPoolExecutorWithQueueSizeLimit(queue_size=queue_size, max_workers=n_workers, mp_context=ctx) as executor:
             key, *subkeys = split_key(key, num=n_chunks)
             results = executor.map(tokenization_worker, zip(sentences_chunked, subkeys))
 
