@@ -139,5 +139,3 @@ rand.KeyArray > lib.random.wrapper.KeyArray
 42
 ...; del key
 ```
-
-`~/.cache/dump2`

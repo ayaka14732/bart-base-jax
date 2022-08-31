@@ -25,12 +25,12 @@ def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_en
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d, n_classes=vocab_size) / len(labels)
     return loss
 
-@functools.partial(jax.pmap, axis_name='num_devices')
+@functools.partial(jax.pmap, axis_name='n_devices')
 def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     loss, grads = train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
 
-    grads = jax.lax.pmean(grads, axis_name='num_devices')
-    loss = jax.lax.pmean(loss, axis_name='num_devices')
+    grads = jax.lax.pmean(grads, axis_name='n_devices')
+    loss = jax.lax.pmean(loss, axis_name='n_devices')
 
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
