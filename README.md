@@ -1,8 +1,23 @@
 # JAX Implementation of bart-base
 
-This project is a JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. The aim of this project is to demonstrate how Transformer-based language models can be implemented using JAX and trained on Cloud TPUs.
+This project is a JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. The aim of this project is to demonstrate how Transformer-based language models can be implemented using JAX and trained on Google Cloud TPUs.
+
+This project is supported by Cloud TPUs from Google's [TPU Research Cloud](https://sites.research.google/trc/about/) (TRC).
 
 This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer), while the code for this project is entirely written by myself.
+
+* [News](#news)
+* [Environment Setup](#environment-setup)
+* [Model Architecture](#model-architecture)
+* [Model Parameters](#model-parameters)
+* [Dataset](#dataset)
+    * [English Wikipedia](#english-wikipedia)
+* [Data Preprocessing](#data-preprocessing)
+* [Data Loader](#data-loader)
+* [Training](#training)
+* [Evaluation](#evaluation)
+* [Generation](#generation)
+* [Analysis](#analysis)
 
 ## News
 
@@ -20,8 +35,6 @@ pip install -U wheel
 pip install "jax[tpu]==0.3.16" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 pip install -r requirements.txt
 ```
-
-To setup in CUDA environment, simply change `[tpu]` in the above command to `[cuda]`.
 
 ## Model Architecture
 
@@ -114,28 +127,12 @@ On-demand data loader
 
 ## Generation
 
+TODO
+
 Typical generation process of the BART model involves the input sequences and their masks. The model generates the output autoregressively.
 
 While greedy decoding is the simplest generation algorithm for autoregressive language models, other algorithms like beam search and sampling can improve the quality of the generated sentences and therefore improve performance. In this project, we refrain from implementing these generation algorithms and leave the work to the Hugging Face Transformers library.
 
 However, generation functions in the Hugging Face Transformers library are coupled with the implementation of their original models, which makes them inaccessible for customized models. To tackle this problem, we convert our model to a regular Hugging Face Transformer model.
 
-### Code quality
-
-TODO: Clean up
-
-If train from scratch, always add `add_prefix_space=True` when initialise the tokenizer
-
-Cannot have
-
-can cause sneaky bugs. Remember to check it before committing
-
-not necessarily true!
-
-```
-rand.PRNGKey > random.wrapper.seed2key
-rand.split > random.wrapper.split_key
-rand.KeyArray > lib.random.wrapper.KeyArray
-42
-...; del key
-```
+## Analysis
