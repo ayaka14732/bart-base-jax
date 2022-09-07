@@ -24,7 +24,7 @@ put_cpu = lambda x: jax.device_put(x, device_cpu)
 @jax.value_and_grad
 def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
-    lm_head = params['embedding']['embedding'].T
+    lm_head = params['lm_head']
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d, n_classes=vocab_size) / len(labels)
     return loss
@@ -39,14 +39,15 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 2
+    n_epochs = 5
     batch_size = 22
-    learning_rate = 0.023
+    learning_rate = 0.02
 
     wandb.init(project='bart-finetune-twblg', config={
         'n_epochs': n_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
+        'untie_lm_head': True,
     })
 
     key = seed2key(seed=42)
