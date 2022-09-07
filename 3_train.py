@@ -12,8 +12,8 @@ from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-vocab_size = 50265  # BartTokenizer.from_pretrained('facebook/bart-base').vocab_size
-pad_token_id = 1  # BartTokenizer.from_pretrained('facebook/bart-base').pad_token_id
+vocab_size = 7697
+pad_token_id = 0
 optimizer = None
 
 @jax.jit

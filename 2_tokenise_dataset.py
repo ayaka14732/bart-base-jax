@@ -11,7 +11,7 @@ tokeniser = CharBasedTokeniser.from_vocab_file('vocab.txt')
 list_tokenised_mandarin = []
 list_tokenised_hokkien = []
 
-with open('twblg/data.tsv', encoding='utf-8') as f:
+with open('lib/twblg/data.tsv', encoding='utf-8') as f:
     for line in f:
         mandarin, hokkien = line.rstrip('\n').split('\t')
         tokenised_mandarin = tokeniser.tokenise_sentence(mandarin)
