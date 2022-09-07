@@ -1,3 +1,5 @@
+import os; os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.98'
+
 import jax
 import jax.numpy as np
 import optax
@@ -39,9 +41,9 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 5
-    batch_size = 22
-    learning_rate = 0.02
+    n_epochs = 7
+    batch_size = 30
+    learning_rate = 0.024
 
     wandb.init(project='bart-finetune-twblg', config={
         'n_epochs': n_epochs,
@@ -53,15 +55,34 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = SimpleDataLoader(subkey, 'dataset.dat', batch_size)
+    data_loader = SimpleDataLoader('dataset.dat', batch_size, key=subkey)
 
     params = load_params('untrained_params.dat')
     params = put_default(params)
 
     global optimizer
-    optimizer = optax.adam(learning_rate=learning_rate)
+    param_labels = {
+        'embedding': 'freeze',
+        'encoder_embed_positions': 'freeze',
+        'decoder_embed_positions': 'freeze',
+        'encoder_embed_layer_norm': 'freeze',
+        'decoder_embed_layer_norm': 'freeze',
+        'encoder_layers': 'freeze',
+        'decoder_layers': ['freeze', 'train', 'train', 'train', 'train', 'train'],
+        'lm_head': 'train',
+    }
+    optimizer_scheme = {
+        'train': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate),
+        ),
+        'freeze': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate * 0.1),
+        ),
+    }
+    optimizer = optax.multi_transform(optimizer_scheme, param_labels)
     opt_state = optimizer.init(params)
-    opt_state = put_default(opt_state)
 
     for _ in range(n_epochs):
         epoch_loss = 0.

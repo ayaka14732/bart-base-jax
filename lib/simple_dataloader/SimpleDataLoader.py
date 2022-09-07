@@ -4,6 +4,7 @@ import jax.numpy as np
 import jax.random as rand
 import math
 import numpy as onp
+from typing import Optional
 
 from ..param_utils.load_params import load_params
 from ..random.wrapper import KeyArray, split_key
@@ -27,7 +28,10 @@ Data = namedtuple('Data', (
 ))
 
 class SimpleDataLoader:
-    def __init__(self, key: KeyArray, path: str, batch_size: int) -> None:
+    def __init__(self, path: str, batch_size: int, shuffle: bool=True, key: Optional[KeyArray]=None) -> None:
+        if shuffle:
+            assert key is not None
+
         dataset = load_params(path)  # dict of `onp.array`s
 
         self.src = dataset['src']
@@ -37,6 +41,7 @@ class SimpleDataLoader:
 
         self.key = key
         self.batch_size = batch_size
+        self.shuffle = shuffle
 
     def __iter__(self):
         src = put_cpu(self.src)
@@ -51,13 +56,14 @@ class SimpleDataLoader:
 
         idx = put_cpu(onp.arange(dataset_len))
 
-        key, subkey = split_key(key)
-        idx = rand.shuffle(subkey, idx)  # shuffled indices
+        if self.shuffle:
+            key, subkey = split_key(key)
+            idx = rand.shuffle(subkey, idx)  # shuffled indices
 
-        src = src[idx]
-        mask_enc_1d = mask_enc_1d[idx]
-        dst = dst[idx]
-        mask_dec_1d = mask_dec_1d[idx]
+            src = src[idx]
+            mask_enc_1d = mask_enc_1d[idx]
+            dst = dst[idx]
+            mask_dec_1d = mask_dec_1d[idx]
 
         n_batches = math.floor(dataset_len / batch_size)
 

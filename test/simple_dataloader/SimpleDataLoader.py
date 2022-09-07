@@ -6,7 +6,7 @@ from lib.simple_dataloader.SimpleDataLoader import SimpleDataLoader
 
 key = seed2key(42)
 
-data_loader = SimpleDataLoader(key, 'dataset.dat', batch_size=22)
+data_loader = SimpleDataLoader('dataset.dat', batch_size=22, key=key)
 
 for n_batches, batch in enumerate(data_loader):
     print(
