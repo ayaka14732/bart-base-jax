@@ -1,4 +1,3 @@
-import functools
 import jax
 import jax.numpy as np
 import optax
@@ -9,11 +8,17 @@ from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key, split_key
+from lib.simple_dataloader.SimpleDataLoader import SimpleDataLoader
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
 vocab_size = 7697
 pad_token_id = 0
 optimizer = None
+
+device_default = jax.devices()[0]
+device_cpu = jax.devices('cpu')[0]
+put_default = lambda x: jax.device_put(x, device_default)
+put_cpu = lambda x: jax.device_put(x, device_cpu)
 
 @jax.jit
 @jax.value_and_grad
@@ -28,20 +33,12 @@ def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_en
 def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     loss, grads = train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
 
-    grads = jax.lax.pmean(grads, axis_name='num_devices')
-    loss = jax.lax.pmean(loss, axis_name='num_devices')
-
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
     return params, opt_state, loss
 
 def main():
-    # hyperparameters
-
-    devices = jax.devices()
-    n_devices = jax.device_count()
-
     n_epochs = 2
     batch_size = 22
     learning_rate = 0.023
@@ -52,14 +49,18 @@ def main():
         'learning_rate': learning_rate,
     })
 
-    dataset = load_params('dataset.dat')
+    key = seed2key(seed=42)
+
+    key, subkey = split_key(key)
+    data_loader = SimpleDataLoader(subkey, 'dataset.dat', batch_size)
+
     params = load_params('untrained_params.dat')
+    params = put_default(params)
 
     global optimizer
     optimizer = optax.adam(learning_rate=learning_rate)
     opt_state = optimizer.init(params)
-
-    key = seed2key(seed=42)
+    opt_state = put_default(opt_state)
 
     for _ in range(n_epochs):
         epoch_loss = 0.
@@ -67,7 +68,8 @@ def main():
         for n_batches, batch in enumerate(data_loader):
             start_time = time.time()
 
-            key, subkey = split_key(key); subkeys = split_key(subkey, num=n_devices)  # force `subkeys` to be an array instead of a list
+            key, subkey = split_key(key)
+            subkey = put_default(subkey)
             params, opt_state, loss = train_step(
                 params,
                 opt_state,
@@ -78,10 +80,10 @@ def main():
                 batch.mask_dec,
                 batch.mask_dec_enc,
                 batch.labels,
-                dropout_key=subkeys,
+                dropout_key=subkey,
             )
 
-            batch_loss = loss[0].item()
+            batch_loss = loss.item()
             assert not np.isnan(batch_loss)
             epoch_loss += batch_loss
 
