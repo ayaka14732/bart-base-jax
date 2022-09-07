@@ -3,7 +3,6 @@ import jax; jax.config.update('jax_platforms', 'cpu')
 import jax.numpy as np
 
 from lib.param_utils.save_params import save_params
-
 from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
 
 tokeniser = CharBasedTokeniser.from_vocab_file('vocab.txt')

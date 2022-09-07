@@ -1,11 +1,10 @@
 import jax; jax.config.update('jax_platforms', 'cpu')
 
-from transformers import BertTokenizer, FlaxBartModel
 import jax.numpy as np
+from transformers import BertTokenizer, FlaxBartModel
 
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key
-
 from lib.twblg.all_chars_in_data import all_chars_in_data
 from lib.twblg.filter_criteria import should_remove
 from lib.twblg.random_init_embed import random_init_embed
