@@ -2,6 +2,7 @@ import jax; jax.config.update('jax_platforms', 'cpu')
 
 import jax.numpy as np
 import math
+import random
 
 from lib.param_utils.save_params import save_params
 from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
@@ -12,12 +13,17 @@ list_tokenised_mandarin = []
 list_tokenised_hokkien = []
 
 with open('lib/twblg/data.tsv', encoding='utf-8') as f:
-    for line in f:
-        mandarin, hokkien = line.rstrip('\n').split('\t')
-        tokenised_mandarin = tokeniser.tokenise_sentence(mandarin)
-        tokenised_hokkien = tokeniser.tokenise_sentence(hokkien)
-        list_tokenised_mandarin.append(tokenised_mandarin)
-        list_tokenised_hokkien.append(tokenised_hokkien)
+    lines = list(f)
+
+random.seed(42)
+random.shuffle(lines)
+
+for line in lines:
+    mandarin, hokkien = line.rstrip('\n').split('\t')
+    tokenised_mandarin = tokeniser.tokenise_sentence(mandarin)
+    tokenised_hokkien = tokeniser.tokenise_sentence(hokkien)
+    list_tokenised_mandarin.append(tokenised_mandarin)
+    list_tokenised_hokkien.append(tokenised_hokkien)
 
 len_mandarin = max(len(l) for l in list_tokenised_mandarin)
 len_hokkien = max(len(l) for l in list_tokenised_hokkien)
