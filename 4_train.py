@@ -41,8 +41,8 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 20
-    batch_size = 30
+    n_epochs = 25
+    batch_size = 35
     learning_rate = 0.03
     freeze_lr_scale = 0.25
 

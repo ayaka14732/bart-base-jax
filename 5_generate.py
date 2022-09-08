@@ -19,7 +19,7 @@ config = BartConfig.from_pretrained(
     vocab_size=7697,
 )
 
-params = load_params('earnest-lake-28.dat')
+params = load_params('fast-sea-33.dat')
 params = jax.tree_map(np.asarray, params)
 generator = Generator(params, config=config)
 
@@ -27,15 +27,7 @@ tokeniser = CharBasedTokeniser.from_vocab_file('vocab.txt')
 
 data_loader = SimpleDataLoader('test.dat', batch_size=1, shuffle=False)
 
-
-i = 0
 for batch in data_loader:
-    i+=1
-    if i < 318:
-        continue
-    if i >= 328:
-        break
-
     src = batch.src
     mask_enc = batch.mask_enc
     mask_enc_1d = batch.mask_enc_1d
