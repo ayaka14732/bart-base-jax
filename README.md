@@ -2,9 +2,18 @@
 
 This project is an implementation of the bart-base model for machine translation from Mandarin to Taiwanese Hokkien.
 
-This project is trained on the compute cluster provided by NUS SoC.
+This project is based on the Chinese version of the pre-trained bart-base model, [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese), and fine-tuned on the compute cluster provided by [NUS SoC](https://www.comp.nus.edu.sg/).
 
 The project is based on the `main` branch of this repository, [ayaka14732/bart-base-jax](https://github.com/ayaka14732/bart-base-jax), a JAX implementation of the bart-base model, supported by Cloud TPUs from Google's [TPU Research Cloud](https://sites.research.google/trc/about/) (TRC).
+
+## Task Formulation
+
+The problem tackled in this project is machine translation from Mandarin to Taiwanese Hokkien. Specifically, the input of the model is a Mandarin sentence in traditional Chinese, and the model is supposed to output its Taiwanese Hokkien translation in traditional Chinese:
+
+```
+Input: 你的文章寫得很好，可以去投稿了。
+Output: 你的文章寫了真好，會使去投稿矣。
+```
 
 ## Environment Setup
 
@@ -15,7 +24,7 @@ python3.10 -m venv ./venv
 . ./venv/bin/activate
 pip install -U pip
 pip install -U wheel
-pip install "jax[tpu]==0.3.17" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+pip install "jax[cuda]==0.3.17" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 pip install -r requirements.txt
 ```
 
