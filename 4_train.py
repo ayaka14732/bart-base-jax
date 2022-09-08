@@ -44,6 +44,7 @@ def main():
     n_epochs = 8
     batch_size = 28
     learning_rate = 0.024
+    freeze_lr_scale = 0.1
 
     wandb.init(project='bart-finetune-twblg', config={
         'n_epochs': n_epochs,
@@ -78,7 +79,7 @@ def main():
         ),
         'freeze': optax.chain(
             optax.adaptive_grad_clip(0.1, eps=0.001),
-            optax.sgd(learning_rate=learning_rate * 0.1),
+            optax.sgd(learning_rate=learning_rate * freeze_lr_scale),
         ),
     }
     optimizer = optax.multi_transform(optimizer_scheme, param_labels)
