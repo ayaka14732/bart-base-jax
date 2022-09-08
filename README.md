@@ -74,22 +74,42 @@ TODO: 目前未有使用開發集
 
 TODO: VSCode 仍然抱怨 unusual line terminators
 
-## Embedding
+## 詞嵌入
 
-Removed
+由於在前述步驟中修改了斷詞器的詞表，詞嵌入層的參數也需要同步修改。對於被從詞表中刪除的詞語，我將對應的位置從詞嵌入層中刪除；而對於新加入的詞語，我採用隨機初始化的方法加入詞嵌入層中。
 
-Randomly initialised.
+## 資料載入器
 
-## Dataloader
+TODO: padding
 
-Since the dataset is very small, the data are directly placed on the GPU memory. However, for larger dataset, the `main` branch provides an on-demand dataloader.
+本專案使用的資料集非常小，因此斷詞後直接裝入 GPU 內存中。
 
-## Training
+## 訓練
 
-SGD
+採用隨機梯度下降 + 梯度剪裁作為最適化器。
 
-## Generation
+## 生成
 
-## Analysis
+採用束搜尋演算法生成，束的個數為 5。
+
+## 結果
+
+TODO: 量化的結果評價方式
+
+```
+Src: 那麼小就經歷父母雙亡，實在是很可憐。
+Gld: 遐細漢爸母就過身，實在是可憐代。
+Out: 遐細漢就經歷爸母雙亡，實在真可憐。
+
+Src: 他又在誇耀了。
+Gld: 伊閣咧展矣。
+Out: 伊閣咧誇耀矣。
+
+Src: 要趕快辦理交接的手續。
+Gld: 愛緊辦理交接的手續。
+Out: 愛緊辦理交接的手續。
+```
+
+## 分析
 
 對於斷詞器，未知的單字不應該直接給 UNK，而是應該 COPY。
