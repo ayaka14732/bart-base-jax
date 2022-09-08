@@ -1,50 +1,46 @@
-import jax
+import jax; jax.config.update('jax_platforms', 'cpu')
+
 import jax.numpy as np
-from transformers import BartTokenizer
+from transformers import BartConfig
 
-from lib.param_utils.load_params import load_params
-from lib.model.fwd_embedding import fwd_embedding
-from lib.model.fwd_layer_norm import fwd_layer_norm
-from lib.model.fwd_transformer_encoder import fwd_transformer_encoder
 from lib.Generator import Generator
+from lib.param_utils.load_params import load_params
+from lib.simple_dataloader.SimpleDataLoader import SimpleDataLoader
+from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
+from lib.twblg.fwd_transformer_encoder_part import fwd_transformer_encoder_part
 
-def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
-    # params
-    embedding: dict = params['embedding']  # embedding
-    encoder_embed_positions: np.ndarray = params['encoder_embed_positions']  # array
-    encoder_embed_layer_norm: dict = params['encoder_embed_layer_norm']  # layer norm
-    encoder_layers: list = params['encoder_layers']  # list of transformer encoder
+config = BartConfig.from_pretrained(
+    'fnlp/bart-base-chinese',
+    bos_token_id=2,
+    eos_token_id=3,
+    vocab_size=7697,
+)
 
-    _, width_enc = src.shape
-
-    offset = 2
-
-    # encoder
-    src = fwd_embedding(embedding, src)
-    src = src + encoder_embed_positions[offset:width_enc+offset]
-    src = fwd_layer_norm(encoder_embed_layer_norm, src)
-
-    for encoder_layer in encoder_layers:
-        src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
-
-    return src
-
-tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-
-sentences = ['Can you see the beautiful flowers <mask> alongside the track?', 'Upon graduation, <mask> of herself.']
-batch = tokenizer(sentences, padding=True, return_tensors='jax')
-
-src = batch.input_ids
-mask_enc_1d = batch.attention_mask.astype(np.bool_)
-mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-
-params = load_params('params_bart_base_en.dat')
+params = load_params('helpful-bird-17.dat')
 params = jax.tree_map(np.asarray, params)
+generator = Generator(params, config=config)
 
-encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
+tokeniser = CharBasedTokeniser.from_vocab_file('vocab.txt')
 
-generator = Generator(params)
-generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5)
+data_loader = SimpleDataLoader('dataset.dat', batch_size=1, shuffle=False)
 
-decoded_sentences = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-print(decoded_sentences)
+
+i = 0
+for batch in data_loader:
+    i+=1
+    if i < 200:
+        continue
+    if i >= 225:
+        break
+
+    src = batch.src
+    mask_enc = batch.mask_enc
+    mask_enc_1d = batch.mask_enc_1d
+
+    encoder_last_hidden_output = fwd_transformer_encoder_part(params, src, mask_enc)
+    generated_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=100, bos_token_id=2, pad_token_id=0, eos_token_id=3, decoder_start_token_id=2)
+
+    print('Src:', tokeniser.detokenise_sentence(src[0].tolist()))
+    print('Gld:', tokeniser.detokenise_sentence(batch.dst[0].tolist()))
+    print('Out:', tokeniser.detokenise_sentence(generated_ids[0].tolist()))
+    print()

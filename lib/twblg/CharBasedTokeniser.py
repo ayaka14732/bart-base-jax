@@ -28,7 +28,13 @@ class CharBasedTokeniser:
         ]
 
     def detokenise_sentence(self, l: list) -> list[str]:
-        return [self.id2ch[i] for i in l]
+        while l and l[-1] == self.pad_token:
+            l.pop()
+        if l and l[0] == self.cls_token:
+            l = l[1:]
+        if l and l[-1] == self.sep_token:
+            l.pop()
+        return ''.join(self.id2ch[i] for i in l)
 
     def __call__(self, s: str):
         pass

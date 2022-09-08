@@ -2,6 +2,7 @@ import jax.numpy as np
 import numpy as onp
 import tempfile
 import torch
+import torch.nn as nn
 from transformers import BartConfig, BartForConditionalGeneration, FlaxBartForConditionalGeneration
 from transformers.modeling_outputs import BaseModelOutput
 
@@ -28,6 +29,7 @@ class Generator:
         decoder_embed_positions: np.ndarray = params['decoder_embed_positions']  # array
         decoder_embed_layer_norm: dict = params['decoder_embed_layer_norm']  # layer norm
         decoder_layers: list = params['decoder_layers']  # list of transformer encoder
+        lm_head: np.ndarray = params['lm_head']  # 768, 7697
 
         # randomly initialize a Flax model
         model_flax = FlaxBartForConditionalGeneration(config=config)
@@ -52,6 +54,8 @@ class Generator:
         with tempfile.TemporaryDirectory() as tmpdirname:
             model_flax.save_pretrained(tmpdirname)
             model_pt = BartForConditionalGeneration.from_pretrained(tmpdirname, from_flax=True)
+
+        model_pt.lm_head.weight = nn.parameter.Parameter(torch.from_numpy(onp.asarray(lm_head.T)))
 
         self.model = model_pt
 

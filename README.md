@@ -1,23 +1,8 @@
 # JAX Implementation of bart-base
 
-This project is a JAX implementation of the [bart-base](https://arxiv.org/abs/1910.13461) model. The aim of this project is to demonstrate how Transformer-based language models can be implemented using JAX and trained on Google Cloud TPUs.
 
-This project is supported by Cloud TPUs from Google's [TPU Research Cloud](https://sites.research.google/trc/about/) (TRC).
+https://github.com/sih4sing5hong5/icorpus/tree/master/%E6%96%87%E7%AB%A0/%E6%A8%A1%E5%9E%8B%E8%A8%93%E7%B7%B4/%E7%BF%BB%E8%AD%AF%E8%AA%9E%E6%96%99
 
-This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoongko/transformer), while the code for this project is entirely written by myself.
-
-* [News](#news)
-* [Environment Setup](#environment-setup)
-* [Model Architecture](#model-architecture)
-* [Model Parameters](#model-parameters)
-* [Dataset](#dataset)
-    * [English Wikipedia](#english-wikipedia)
-* [Data Preprocessing](#data-preprocessing)
-* [Data Loader](#data-loader)
-* [Training](#training)
-* [Evaluation](#evaluation)
-* [Generation](#generation)
-* [Analysis](#analysis)
 
 ## News
 

@@ -27,6 +27,12 @@ Data = namedtuple('Data', (
     'labels',
 ))
 
+def mask_1d_to_2d(mask_enc_1d, mask_dec_1d):
+    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+    mask_dec = np.tril(onp.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
+    mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
+    return mask_enc, mask_dec, mask_dec_enc
+
 class SimpleDataLoader:
     def __init__(self, path: str, batch_size: int, shuffle: bool=True, key: Optional[KeyArray]=None) -> None:
         if shuffle:
@@ -73,9 +79,7 @@ class SimpleDataLoader:
             dst_ = dst[i * batch_size:(i + 1) * batch_size]
             mask_dec_1d_ = mask_dec_1d[i * batch_size:(i + 1) * batch_size]
 
-            mask_enc = np.einsum('bi,bj->bij', mask_enc_1d_, mask_enc_1d_)[:, None]
-            mask_dec = np.tril(onp.einsum('bi,bj->bij', mask_dec_1d_, mask_dec_1d_))[:, None]
-            mask_dec_enc = np.einsum('bi,bj->bij', mask_dec_1d_, mask_enc_1d_)[:, None]
+            mask_enc, mask_dec, mask_dec_enc = mask_1d_to_2d(mask_enc_1d_, mask_dec_1d_)
 
             pad_at_end = put_cpu(onp.ones((batch_size, 1), dtype=onp.uint16) * pad_token_id)
             labels = np.hstack((dst_[:, 1:], pad_at_end))

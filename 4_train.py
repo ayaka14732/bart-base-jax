@@ -41,8 +41,8 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 7
-    batch_size = 30
+    n_epochs = 8
+    batch_size = 28
     learning_rate = 0.024
 
     wandb.init(project='bart-finetune-twblg', config={
@@ -55,7 +55,7 @@ def main():
     key = seed2key(seed=42)
 
     key, subkey = split_key(key)
-    data_loader = SimpleDataLoader('dataset.dat', batch_size, key=subkey)
+    data_loader = SimpleDataLoader('train.dat', batch_size, key=subkey)
 
     params = load_params('untrained_params.dat')
     params = put_default(params)
