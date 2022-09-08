@@ -10,3 +10,4 @@ optax~=0.1.3
 transformers~=4.21.2
 wikiextractor
 blingfire
+starcc~=0.0.5

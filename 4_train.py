@@ -1,4 +1,4 @@
-import os; os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.98'
+import os; os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 
 import jax
 import jax.numpy as np
@@ -41,15 +41,16 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 8
-    batch_size = 28
-    learning_rate = 0.024
-    freeze_lr_scale = 0.1
+    n_epochs = 20
+    batch_size = 30
+    learning_rate = 0.03
+    freeze_lr_scale = 0.25
 
     wandb.init(project='bart-finetune-twblg', config={
         'n_epochs': n_epochs,
         'batch_size': batch_size,
         'learning_rate': learning_rate,
+        'freeze_lr_scale': freeze_lr_scale,
         'untie_lm_head': True,
     })
 
@@ -65,11 +66,11 @@ def main():
     param_labels = {
         'embedding': 'freeze',
         'encoder_embed_positions': 'freeze',
-        'decoder_embed_positions': 'freeze',
         'encoder_embed_layer_norm': 'freeze',
-        'decoder_embed_layer_norm': 'freeze',
         'encoder_layers': 'freeze',
-        'decoder_layers': ['freeze', 'train', 'train', 'train', 'train', 'train'],
+        'decoder_embed_positions': 'train',
+        'decoder_embed_layer_norm': 'train',
+        'decoder_layers': 'train',
         'lm_head': 'train',
     }
     optimizer_scheme = {
@@ -85,7 +86,7 @@ def main():
     optimizer = optax.multi_transform(optimizer_scheme, param_labels)
     opt_state = optimizer.init(params)
 
-    for _ in range(n_epochs):
+    for epoch in range(n_epochs):
         epoch_loss = 0.
 
         for n_batches, batch in enumerate(data_loader):
@@ -115,7 +116,7 @@ def main():
             wandb.log({'batch loss': batch_loss, 'time': elapsed_time})
 
         epoch_loss /= n_batches
-        wandb.log({'epoch loss': epoch_loss})
+        wandb.log({'epoch': epoch, 'epoch loss': epoch_loss})
 
         filename = f'{wandb.run.name}.dat'
         save_params(params, filename)
