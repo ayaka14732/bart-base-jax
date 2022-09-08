@@ -1,4 +1,4 @@
-import os; os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.99'
+import os; os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.98'
 
 import jax
 import jax.numpy as np
