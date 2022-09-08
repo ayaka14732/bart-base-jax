@@ -30,15 +30,17 @@ pip install -r requirements.txt
 
 ## Dataset
 
-The dataset is provided in `lib/twblg/data.tsv`. It is a parallel corpus that consists of 8366 sentences. The sentences are split into train, dev and test sets with a ratio of 8:1:1. However, at present, the dev set is not utilised during training.
+The dataset used in this project is [_Dictionary of Frequently-Used Taiwan Minnan_](https://twblg.dict.edu.tw/holodict_new/), while the data is collected from [g0v/moedict-data-twblg](https://github.com/g0v/moedict-data-twblg/blob/master/uni/%E4%BE%8B%E5%8F%A5.csv). The advantage of using this dataset is that the sentences are drawn from dictionary examples and thus contain more distinctive words in Taiwanese Hokkien, allowing the model to learn a more complete Taiwanese Hokkien vocabulary.
 
-The source of the dataset is [g0v/moedict-data-twblg](https://github.com/g0v/moedict-data-twblg/blob/master/uni/%E4%BE%8B%E5%8F%A5.csv). The advantage of this dataset is that the sentences are derived from the dictionary. Therefore, it is more effective for the model to learn the distinctive vocabulary of Taiwanese Hokkien.
+The data file (`lib/twblg/data.tsv`) consists of 8366 sentences in both Mandarin and Taiwanese Hokkien. The sentences are split into train, dev and test sets with a ratio of 8:1:1. However, the dev set is not utilised at present.
 
 ## Data Preprocessing
 
-As I am going to use [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) as my base model, the dataset should be written in simplified Chinese. Therefore, I converted all the texts in the dataset from traditional Chinese to simplified Chinese using [StarCC](https://github.com/StarCC0/starcc-py).
+As I am using [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) as the base model, the data fed into the model must be in simplified Chinese. Therefore, I converted the dataset from traditional Chinese to simplified Chinese using [StarCC](https://github.com/StarCC0/starcc-py).
 
-Due to the one-to-many problem, the accuracy is not always guaranteed when converting from simplified Chinese to traditional Chinese. To tackle this, I modify StarCC's conversion algorithm from two aspects:
+However, due to the one-to-many problem, the accuracy of the conversion from simplified Chinese to traditional Chinese is not always guaranteed. The error comes from two aspects:
+
+Firstly, the 
 
 For sentences in the corpus, I keep the original traditional Chinese version alongside the converted simplified Chinese version. Therefore, when the traditional Chinese version is needed, we can always retrieve it in its original form.
 
