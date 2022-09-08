@@ -1,16 +1,14 @@
-# JAX Implementation of bart-base
+# Machine Translation Model from Mandarin to Taiwanese Hokkien
 
+This project is an implementation of the bart-base model for machine translation from Mandarin to Taiwanese Hokkien.
 
-https://github.com/sih4sing5hong5/icorpus/tree/master/%E6%96%87%E7%AB%A0/%E6%A8%A1%E5%9E%8B%E8%A8%93%E7%B7%B4/%E7%BF%BB%E8%AD%AF%E8%AA%9E%E6%96%99
+This project is trained on the compute cluster provided by NUS SoC.
 
-
-## News
-
-**2022-03-27:** In addition to the regular implementation, I also implemented the model in a single line of Python code, by virtue of JAX's functional-style API. [[Twitter]](https://twitter.com/ayaka14732/status/1507955631109869574)
+The project is based on the `main` branch of this repository, [ayaka14732/bart-base-jax](https://github.com/ayaka14732/bart-base-jax), a JAX implementation of the bart-base model, supported by Cloud TPUs from Google's [TPU Research Cloud](https://sites.research.google/trc/about/) (TRC).
 
 ## Environment Setup
 
-Set up TPU environment as described in [ayaka14732/tpu-starter](https://github.com/ayaka14732/tpu-starter). Then run the following commands:
+The scripts are designed to be run on a single machine with one GPU.
 
 ```sh
 python3.10 -m venv ./venv
@@ -21,103 +19,56 @@ pip install "jax[tpu]==0.3.17" -f https://storage.googleapis.com/jax-releases/li
 pip install -r requirements.txt
 ```
 
-## Model Architecture
-
-TODO: See `lib/model`.
-
-## Model Parameters
-
-Parameter-related operations are implemented in the `lib/param_utils` directory. Notably, three functions, `flax2jax`, `pt2jax` and `jax2flax` are implemented, to allow any conversions between PyTorch, Flax and JAX implementation.
-
-| from\to | PyTorch | Flax | JAX |
-| :- | :-: | :-: | :-: |
-| PyTorch | - | `save_pretrained` | `pt2jax` |
-| Flax | `save_pretrained` | - | `flax2jax` |
-| JAX | `jax2flax` + `save_pretrained` | `jax2flax` | - |
-
-`save_pretrained` is a function provided by the Hugging Face Transformers library, so that users can save the model in one framework and reload it in another framework. For instance, the following code saves a Flax model and reload it as a PyTorch model:
-
-```python
-with tempfile.TemporaryDirectory() as tmpdirname:
-    model_flax.save_pretrained(tmpdirname)
-    model_pt = BartForConditionalGeneration.from_pretrained(tmpdirname, from_flax=True)
-```
-
-JAX parameters, see [param_format.txt](param_format.txt).
-
 ## Dataset
 
-### English Wikipedia
+The dataset is provided in `lib/twblg/data.tsv`. It is a parallel corpus that consists of 8366 sentences. The sentences are split into train, dev and test sets with a ratio of 8:1:1. However, at present, the dev set is not utilised during training.
 
-Split English Wikipedia into sentences.
-
-1. Download the English Wikipedia data
-1. Extract the data by WikiExtractor
-1. Split the articles into sentences by Bling Fire
-1. Save the sentences to files (one sentence per line)
-
-```sh
-python prepare_dataset.py
-```
-
-On Cloud TPU v3-8, the processing takes 15m18s. On Cloud TPU v4-8, it takes 4m19s. The size of the directory is about 15 GiB.
+The source of the dataset is [g0v/moedict-data-twblg](https://github.com/g0v/moedict-data-twblg/blob/master/uni/%E4%BE%8B%E5%8F%A5.csv). The advantage of this dataset is that the sentences are derived from the dictionary. Therefore, it is more effective for the model to learn the distinctive vocabulary of Taiwanese Hokkien.
 
 ## Data Preprocessing
 
-The `[EOS]` token (`tokenizer.eos_token_id`) should be prepended before all sentences in `dst`.
+As I am going to use [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) as my base model, the dataset should be written in simplified Chinese. Therefore, I converted all the texts in the dataset from traditional Chinese to simplified Chinese using [StarCC](https://github.com/StarCC0/starcc-py).
 
-Example:
+Due to the one-to-many problem, the accuracy is not always guaranteed when converting from simplified Chinese to traditional Chinese. To tackle this, I modify StarCC's conversion algorithm from two aspects:
 
-```
-Input: ['<s>A flower.</s><pad>', '<s>Some good sentences.</s>']
-Output: ['</s><s>A flower.</s><pad>', '</s><s>Some good sentences.</s>']
-Input IDs: [[0, 250, 14214, 4, 2, 1], [0, 6323, 205, 11305, 4, 2]]
-Output IDs: [[2, 0, 250, 14214, 4, 2, 1], [2, 0, 6323, 205, 11305, 4, 2]]
-```
+For sentences in the corpus, I keep the original traditional Chinese version alongside the converted simplified Chinese version. Therefore, when the traditional Chinese version is needed, we can always retrieve it in its original form.
 
-- **src**: `[BOS]`, A, `[MSK]`, flower, `[EOS]`, `[PAD]`, `[PAD]`
-- **dst**: `[EOS]`, `[BOS]`, A, beautiful, flower, `[EOS]`, `[PAD]`
-- **label**: `[BOS]`, A, beautiful, flower, `[EOS]`, `[PAD]`, `[PAD]`
+For new sentences (e.g. the model output), I cached a convertion table when converting from traditional Chinese to simplified Chinese. When converting back, words in the conversion table will also be utilised. For example, 代誌 ('affair') is a Taiwanese Hokkien word that is not exist in the original conversion table of StarCC, which is tailored for Mandarin. Unfortunately, the charater 志 in simplified Chinese corresponds to 志 and 誌 in traditional Chinese, and by default the StarCC module will convert it to the former, which is wrong.
 
-<details>
+## Tokeniser
 
-```python
-from transformers import BartTokenizer, BartForConditionalGeneration
+The original tokeniser used in [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) is the Chinese version of the `BertTokenizer` in Hugging Face Transformer repository, with a vocabulary size of 21128. However, there are three problems with the tokeniser:
 
-model_name = 'facebook/bart-base'
-tokenizer = BartTokenizer.from_pretrained(model_name)
-model = BartForConditionalGeneration.from_pretrained(model_name)
+Firstly, the BERT tokeniser employs WordPiece as the subword tokenisation algorithm, while for Chinese texts, a characted-based tokenisation algorithm is already sufficient. Worse still, as the Chinese BERT tokeniser is fit on Chinese texts, a large part of the tokens are rubbish words or subtokens of a word, which will never occur when using real datasets.
 
-sentences = ('A flower.', 'Some good sentences.')
+Secondly, although the model is trained on simplified Chinese texts, its vocabulary contains many traditional Chinese characters. This may result in an illusion of users that the model can handle traditional Chinese as well. However, the token are less trained, so the model will never learn the exact meaning of these traditional Chinese characters.
 
-inputs = tokenizer(sentences, return_tensors='pt', max_length=6, padding='max_length', truncation=True)
-output = model.generate(inputs.input_ids)
+Thirdly, as the vocabulary is fit on Chinese dataset, some of the common Taiwanese Hokkien characters are absent from the vocabulary. For example, 𪜶 ('they; its') is a common character in Taiwanese Hokkien. If the tokenizer cannot handle this word, it will fail to translate many sentences.
 
-print('Input:', tokenizer.batch_decode(inputs.input_ids))
-print('Output:', tokenizer.batch_decode(output))
+TODO: VSCode detected unusual line terminators.
 
-print('Input IDs:', inputs.input_ids.tolist())
-print('Output IDs:', output.tolist())
-```
+To tackle the first problem, I modified the vocabulary of the original dataset, removed all the rubbish words.
 
-</details>
+For the second problem, I used a tool to identify all charaters.
 
-## Data Loader
+For the third problem, I added characters in the dataset.
 
-On-demand data loader
+The resulting vocabulary size is 7697.
+
+## Embedding
+
+Removed
+
+Randomly initialised.
+
+## Dataloader
+
+Since the dataset is very small, the data are directly placed on the GPU memory. However, for larger dataset, the `main` branch provides an on-demand dataloader.
 
 ## Training
 
-## Evaluation
+SGD
 
 ## Generation
-
-TODO
-
-Typical generation process of the BART model involves the input sequences and their masks. The model generates the output autoregressively.
-
-While greedy decoding is the simplest generation algorithm for autoregressive language models, other algorithms like beam search and sampling can improve the quality of the generated sentences and therefore improve performance. In this project, we refrain from implementing these generation algorithms and leave the work to the Hugging Face Transformers library.
-
-However, generation functions in the Hugging Face Transformers library are coupled with the implementation of their original models, which makes them inaccessible for customized models. To tackle this problem, we convert our model to a regular Hugging Face Transformer model.
 
 ## Analysis
