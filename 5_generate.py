@@ -19,7 +19,7 @@ config = BartConfig.from_pretrained(
     vocab_size=6995,
 )
 
-params = load_params('fast-sea-33.dat')
+params = load_params('whole-frog-35.dat')
 params = jax.tree_map(np.asarray, params)
 generator = Generator(params, config=config)
 
@@ -33,9 +33,11 @@ for batch in data_loader:
     mask_enc_1d = batch.mask_enc_1d
 
     encoder_last_hidden_output = fwd_transformer_encoder_part(params, src, mask_enc)
-    generated_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=100, bos_token_id=2, pad_token_id=0, eos_token_id=3, decoder_start_token_id=2)
+    generated_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=7, max_length=100, bos_token_id=2, pad_token_id=0, eos_token_id=3, decoder_start_token_id=2, num_return_sequences=3)
 
     print('Src:', trad(tokeniser.detokenise_sentence(src[0].tolist())))
     print('Gld:', trad(tokeniser.detokenise_sentence(batch.dst[0].tolist())).replace('/', ''))
-    print('Out:', trad(tokeniser.detokenise_sentence(generated_ids[0].tolist())).replace('/', ''))
+    print('Ot1:', trad(tokeniser.detokenise_sentence(generated_ids[0].tolist())).replace('/', ''))
+    print('Ot2:', trad(tokeniser.detokenise_sentence(generated_ids[1].tolist())).replace('/', ''))
+    print('Ot3:', trad(tokeniser.detokenise_sentence(generated_ids[2].tolist())).replace('/', ''))
     print()
