@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 本專案使用的資料集為[臺灣閩南語常用詞詞典](https://twblg.dict.edu.tw/holodict_new/)，資料蒐集於 [g0v/moedict-data-twblg](https://github.com/g0v/moedict-data-twblg/blob/master/uni/%E4%BE%8B%E5%8F%A5.csv)。本專案選用這一資料，是因為資料集中的例句源自詞典，而詞典中往往收錄更多臺灣閩南語特有字詞，因此例句所用詞彙更為豐富，可以使模型學習到更加完整的臺灣閩南語用法。
 
-資料集存放在 `lib/twblg/data.tsv`，其中包含 8366 對句子，每對句子包含華語及對應的臺語翻譯。將句子亂數重排後，依比例 8:1:1 將資料集分割為訓練集、開發集和測試集。
+資料集存放在 `lib/twblg/data.tsv`，其中包含 8366 對句子，每對句子包含繁簡兩個版本的華語及對應的臺語翻譯。將句子亂數重排後，依比例 8:1:1 將資料集分割為訓練集、開發集和測試集。
 
 TODO: 目前未有使用開發集
 

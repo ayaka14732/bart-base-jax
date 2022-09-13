@@ -19,7 +19,7 @@ random.seed(42)
 random.shuffle(lines)
 
 for line in lines:
-    mandarin, hokkien = line.rstrip('\n').split('\t')
+    _, _, mandarin, hokkien = line.rstrip('\n').split('\t')
     tokenised_mandarin = tokeniser.tokenise_sentence(mandarin)
     tokenised_hokkien = tokeniser.tokenise_sentence(hokkien)
     list_tokenised_mandarin.append(tokenised_mandarin)
