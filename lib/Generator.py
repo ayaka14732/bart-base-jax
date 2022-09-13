@@ -29,7 +29,7 @@ class Generator:
         decoder_embed_positions: np.ndarray = params['decoder_embed_positions']  # array
         decoder_embed_layer_norm: dict = params['decoder_embed_layer_norm']  # layer norm
         decoder_layers: list = params['decoder_layers']  # list of transformer encoder
-        lm_head: np.ndarray = params['lm_head']  # 768, 7697
+        lm_head: np.ndarray = params['lm_head']  # 768, 6995
 
         # randomly initialize a Flax model
         model_flax = FlaxBartForConditionalGeneration(config=config)
