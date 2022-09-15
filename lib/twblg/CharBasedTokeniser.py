@@ -3,7 +3,7 @@ from os.path import join
 from transformers import AddedToken, PreTrainedTokenizer
 from typing import Union, Optional
 
-class CharBasedTokenizer(PreTrainedTokenizer):
+class CharBasedTokeniser(PreTrainedTokenizer):
 
     model_input_names = ['input_ids', 'attention_mask']
 

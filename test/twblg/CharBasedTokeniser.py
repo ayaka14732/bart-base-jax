@@ -3,7 +3,7 @@ from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve
 from os.path import join
 import tempfile
 
-from lib.twblg.CharBasedTokeniser import CharBasedTokenizer
+from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
 
 vocab = [
     '[PAD]',
@@ -18,12 +18,12 @@ vocab = [
     '九',
 ]
 
-tokeniser = CharBasedTokenizer(vocab=vocab)
+tokeniser = CharBasedTokeniser(vocab=vocab)
 with tempfile.TemporaryDirectory() as tmpdirname:
     tokeniser.save_vocabulary(save_directory=tmpdirname, filename_prefix='prefix_')
     del tokeniser
     vocab_file = join(tmpdirname, 'prefix_vocab.txt')
-    tokeniser = CharBasedTokenizer(vocab=vocab_file)
+    tokeniser = CharBasedTokeniser(vocab=vocab_file)
 
 inputs = tokeniser(['五六', '七八九十'], return_tensors='np', max_length=8, padding='max_length', truncation=True)
 inputs.input_ids[0].tolist()[:4] == [2, 5, 6, 3]

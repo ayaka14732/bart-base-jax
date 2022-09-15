@@ -19,7 +19,7 @@ config = BartConfig.from_pretrained(
     vocab_size=6995,
 )
 
-params = load_params('whole-frog-35.dat')
+params = load_params('serene-disco-36.dat')
 params = jax.tree_map(np.asarray, params)
 generator = Generator(params, config=config)
 

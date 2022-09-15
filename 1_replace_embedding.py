@@ -5,6 +5,7 @@ from transformers import BertTokenizer, FlaxBartModel
 
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key
+from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
 from lib.twblg.all_chars_in_data import all_chars_in_data
 from lib.twblg.filter_criteria import should_remove
 from lib.twblg.random_init_embed import random_init_embed
@@ -25,7 +26,7 @@ d_merge = {
     **{c: emb_new[i] for i, c in enumerate(new_chars)},
 }
 
-id2ch = []
+vocab = []
 emb_all = []
 
 for i, (c, emb) in enumerate(d_merge.items()):
@@ -33,13 +34,18 @@ for i, (c, emb) in enumerate(d_merge.items()):
     assert emb.shape[0] == 768
     assert c != '\n'
 
-    id2ch.append(c)
+    c = {
+        '[CLS]': '[BOS]',
+        '[SEP]': '[EOS]',
+        '[MASK]': '[MSK]',
+    }.get(c, c)
+
+    vocab.append(c)
     emb_all.append(emb)
 
 emb_all = np.vstack(emb_all)
 
-with open('vocab.txt', 'w', encoding='utf-8') as f:
-    for c in id2ch:
-        print(c, file=f)
+tokeniser = CharBasedTokeniser(vocab=vocab)
+tokeniser.save_vocabulary()
 
 save_params(emb_all, 'embed_params.dat')

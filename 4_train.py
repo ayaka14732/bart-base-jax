@@ -41,10 +41,10 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
-    n_epochs = 25
+    n_epochs = 30
     batch_size = 35
     learning_rate = 0.03
-    freeze_lr_scale = 0.25
+    freeze_lr_scale = 0.3
 
     wandb.init(project='bart-finetune-twblg', config={
         'n_epochs': n_epochs,

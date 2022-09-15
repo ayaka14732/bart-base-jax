@@ -7,10 +7,7 @@ import random
 from lib.param_utils.save_params import save_params
 from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
 
-tokeniser = CharBasedTokeniser.from_vocab_file('vocab.txt')
-
-list_tokenised_mandarin = []
-list_tokenised_hokkien = []
+tokeniser = CharBasedTokeniser(vocab='vocab.txt')
 
 with open('lib/twblg/data.tsv', encoding='utf-8') as f:
     lines = list(f)
@@ -18,40 +15,24 @@ with open('lib/twblg/data.tsv', encoding='utf-8') as f:
 random.seed(42)
 random.shuffle(lines)
 
+mandarins = []
+hokkiens = []
+
 for line in lines:
     _, _, mandarin, hokkien = line.rstrip('\n').split('\t')
-    tokenised_mandarin = tokeniser.tokenise_sentence(mandarin)
-    tokenised_hokkien = tokeniser.tokenise_sentence(hokkien)
-    list_tokenised_mandarin.append(tokenised_mandarin)
-    list_tokenised_hokkien.append(tokenised_hokkien)
+    mandarins.append(mandarin)
+    hokkiens.append(hokkien)
 
-len_mandarin = max(len(l) for l in list_tokenised_mandarin)
-len_hokkien = max(len(l) for l in list_tokenised_hokkien)
+max_len_mandarin = max(len(l) for l in mandarins) + 2  # 2: [BOS], [EOS]
+max_len_hokkien = max(len(l) for l in hokkiens) + 2
 
-pad_token = tokeniser.pad_token
+tokenised_mandarin = tokeniser(mandarins, return_tensors='np', max_length=max_len_mandarin, padding='max_length', truncation=True)
+tokenised_hokkien = tokeniser(hokkien, return_tensors='np', max_length=max_len_hokkien, padding='max_length', truncation=True)
 
-list_tokenised_padded_mandarin = []
-mask_mandarin = []
-
-for l in list_tokenised_mandarin:
-    content_len = len(l)
-    pad_len = len_mandarin - content_len
-    list_tokenised_padded_mandarin.append([*l, *((pad_token,) * pad_len)])
-    mask_mandarin.append([*((1,) * content_len), *((0,) * pad_len)])
-
-list_tokenised_padded_hokkien = []
-mask_hokkien = []
-
-for l in list_tokenised_hokkien:
-    content_len = len(l)
-    pad_len = len_hokkien - content_len
-    list_tokenised_padded_hokkien.append([*l, *((pad_token,) * pad_len)])
-    mask_hokkien.append([*((1,) * content_len), *((0,) * pad_len)])
-
-src = np.array(list_tokenised_padded_mandarin, dtype=np.uint16)
-mask_enc_1d = np.array(mask_mandarin, dtype=np.bool_)
-dst = np.array(list_tokenised_padded_hokkien, dtype=np.uint16)
-mask_dec_1d = np.array(mask_hokkien, dtype=np.bool_)
+src = tokenised_mandarin.input_ids.astype(np.uint16)
+mask_enc_1d = tokenised_mandarin.attention_mask.astype(np.bool_)
+dst = tokenised_hokkien.input_ids.astype(np.uint16)
+mask_dec_1d = tokenised_hokkien.attention_mask.astype(np.bool_)
 
 len_dataset = len(src)
 len_train = math.floor(len_dataset * 0.8)
