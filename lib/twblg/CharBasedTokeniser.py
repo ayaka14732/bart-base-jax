@@ -64,6 +64,12 @@ class CharBasedTokeniser(PreTrainedTokenizer):
         return self.id2ch[index]
 
     def convert_tokens_to_string(self, tokens):
+        while tokens and tokens[-1] == '[PAD]':
+            tokens.pop()
+        if tokens and tokens[0] == '[BOS]':
+            tokens = tokens[1:]
+        if tokens and tokens[-1] == '[EOS]':
+            tokens.pop()
         return ''.join(tokens)
 
     def save_vocabulary(self, save_directory: Optional[str]=None, filename_prefix: Optional[str]=None) -> tuple[str]:
