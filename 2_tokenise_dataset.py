@@ -1,7 +1,7 @@
 import jax; jax.config.update('jax_platforms', 'cpu')
 
-import jax.numpy as np
 import math
+import numpy as onp
 import random
 
 from lib.param_utils.save_params import save_params
@@ -27,12 +27,12 @@ max_len_mandarin = max(len(l) for l in mandarins) + 2  # 2: [BOS], [EOS]
 max_len_hokkien = max(len(l) for l in hokkiens) + 2
 
 tokenised_mandarin = tokeniser(mandarins, return_tensors='np', max_length=max_len_mandarin, padding='max_length', truncation=True)
-tokenised_hokkien = tokeniser(hokkien, return_tensors='np', max_length=max_len_hokkien, padding='max_length', truncation=True)
+tokenised_hokkien = tokeniser(hokkiens, return_tensors='np', max_length=max_len_hokkien, padding='max_length', truncation=True)
 
-src = tokenised_mandarin.input_ids.astype(np.uint16)
-mask_enc_1d = tokenised_mandarin.attention_mask.astype(np.bool_)
-dst = tokenised_hokkien.input_ids.astype(np.uint16)
-mask_dec_1d = tokenised_hokkien.attention_mask.astype(np.bool_)
+src = tokenised_mandarin.input_ids.astype(onp.uint16)
+mask_enc_1d = tokenised_mandarin.attention_mask.astype(onp.bool_)
+dst = tokenised_hokkien.input_ids.astype(onp.uint16)
+mask_dec_1d = tokenised_hokkien.attention_mask.astype(onp.bool_)
 
 len_dataset = len(src)
 len_train = math.floor(len_dataset * 0.8)
