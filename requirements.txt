@@ -11,3 +11,4 @@ transformers~=4.21.2
 wikiextractor
 blingfire
 starcc~=0.0.5
+CherryPy~=18.8.0
