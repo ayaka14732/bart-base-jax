@@ -13,7 +13,7 @@ from lib.random.wrapper import seed2key, split_key
 from lib.simple_dataloader.SimpleDataLoader import SimpleDataLoader
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-vocab_size = 6995
+vocab_size = 7153
 pad_token_id = 0
 optimizer = None
 

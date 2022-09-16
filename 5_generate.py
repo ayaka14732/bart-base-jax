@@ -21,7 +21,7 @@ config = BartConfig.from_pretrained(
     'fnlp/bart-base-chinese',
     bos_token_id=2,
     eos_token_id=3,
-    vocab_size=6995,
+    vocab_size=7153,
 )
 
 params = load_params('peachy-pine-38.dat')

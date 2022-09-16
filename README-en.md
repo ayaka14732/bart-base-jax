@@ -64,7 +64,7 @@ For the second problem, I used a tool to identify all charaters.
 
 For the third problem, I added characters in the dataset.
 
-The resulting vocabulary size is 6995.
+The resulting vocabulary size is 7153.
 
 ## Embedding
 

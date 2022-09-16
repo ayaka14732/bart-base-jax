@@ -1,4 +1,5 @@
 from os.path import abspath, dirname, join
+import string
 
 here = dirname(abspath(__file__))
 
@@ -11,9 +12,4 @@ def get_all_chars_in_data(path: str) -> set:
             s.update(hokkien)
     return s
 
-all_chars_in_data = get_all_chars_in_data(join(here, 'data.tsv'))
-
-def dump_all_chars_in_data(path: str, dst: str) -> None:
-    with open(dst, encoding='utf-8') as f:
-        for c in get_all_chars_in_data(path):
-            print(c, file=f)
+should_add = get_all_chars_in_data(join(here, 'data.tsv')) | set(string.ascii_letters)

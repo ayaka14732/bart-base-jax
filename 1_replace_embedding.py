@@ -6,9 +6,9 @@ from transformers import BertTokenizer, FlaxBartModel
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key
 from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
-from lib.twblg.all_chars_in_data import all_chars_in_data
 from lib.twblg.filter_criteria import should_remove
 from lib.twblg.random_init_embed import random_init_embed
+from lib.twblg.should_add import should_add
 
 tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 model = FlaxBartModel.from_pretrained('fnlp/bart-base-chinese', from_pt=True)
@@ -16,7 +16,7 @@ model = FlaxBartModel.from_pretrained('fnlp/bart-base-chinese', from_pt=True)
 key = seed2key(42)
 
 ch2id_old = {c: i for c, i in tokenizer.vocab.items() if not should_remove(c)}
-new_chars = set(c for c in all_chars_in_data if c not in ch2id_old)
+new_chars = set(c for c in should_add if c not in ch2id_old)
 
 emb_old = model.params['shared']['embedding']
 emb_new = random_init_embed(key, len(new_chars))
