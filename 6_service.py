@@ -41,7 +41,7 @@ def translate(s):
     mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
 
     encoder_last_hidden_output = fwd_transformer_encoder_part(params, src, mask_enc)
-    generated_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=7, max_length=100, bos_token_id=2, pad_token_id=0, eos_token_id=3, decoder_start_token_id=2, num_return_sequences=num_return_sequences)
+    generated_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=7, max_length=500, bos_token_id=2, pad_token_id=0, eos_token_id=3, decoder_start_token_id=2, num_return_sequences=num_return_sequences)
 
     generated_sentences = tokeniser.batch_decode(generated_ids)
     generated_sentences = list({trad(s.replace('/', '')): None for s in generated_sentences})
@@ -58,7 +58,8 @@ if __name__ == '__main__':
     cherrypy.config.update({
         'environment': 'production',
         'log.screen': False,
-        'server.socket_host': '0.0.0.0',
+        'server.socket_host': '127.0.0.1',
+        'server.socket_port': 31345,
         'show_tracebacks': False,
         'server.thread_pool': 1,
     })
