@@ -2,6 +2,7 @@ import jax; jax.config.update('jax_platforms', 'cpu')
 
 import cherrypy
 import jax.numpy as np
+import logging
 from StarCC import PresetConversion
 from transformers import BartConfig
 
@@ -9,6 +10,9 @@ from lib.Generator import Generator
 from lib.param_utils.load_params import load_params
 from lib.twblg.CharBasedTokeniser import CharBasedTokeniser
 from lib.twblg.fwd_transformer_encoder_part import fwd_transformer_encoder_part
+
+# disable logging
+logging.getLogger('cherrypy').propagate = False
 
 batch_size = 512
 num_return_sequences = 3
