@@ -10,8 +10,8 @@ from .fwd_transformer_encoder import fwd_transformer_encoder
 from .fwd_transformer_decoder import fwd_transformer_decoder
 from ..random.wrapper import KeyArray
 
-@jaxtyped
-@typechecker
+# @jaxtyped
+# @typechecker
 def fwd_transformer(
     params: PyTree,
     src: U16['bs src_len'],

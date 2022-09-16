@@ -9,8 +9,8 @@ from .fwd_linear import fwd_linear
 from .fwd_attention import fwd_attention
 from ..random.wrapper import KeyArray
 
-@jaxtyped
-@typechecker
+# @jaxtyped
+# @typechecker
 def fwd_transformer_decoder(
     params: PyTree,
     src: F['bs src_len d_model'],
@@ -37,7 +37,7 @@ def fwd_transformer_decoder(
         dst = dropout(subkeys[0], dst)
     dst = dst + dst_
     dst = fwd_layer_norm(self_attn_layer_norm, dst)
-    check_type('dst', dst, F['bs dst_len d_ff'])
+    ### check_type('dst', dst, F['bs dst_len d_ff'])
 
     dst_ = dst
     src = fwd_attention(cross_attn, src, dst, mask_dec_enc)
@@ -45,7 +45,7 @@ def fwd_transformer_decoder(
         src = dropout(subkeys[1], src)
     t = src + dst_
     t = fwd_layer_norm(cross_attn_layer_norm, t)
-    check_type('t', t, F['bs dst_len d_ff'])
+    ### check_type('t', t, F['bs dst_len d_ff'])
 
     t_ = t
     t = fwd_linear(ff0, t)
@@ -57,6 +57,6 @@ def fwd_transformer_decoder(
         t = dropout(subkeys[3], t)
     t = t + t_
     t = fwd_layer_norm(final_layer_norm, t)
-    check_type('t', t, F['bs dst_len d_model'])
+    ### check_type('t', t, F['bs dst_len d_model'])
 
     return t

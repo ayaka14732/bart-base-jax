@@ -9,8 +9,8 @@ from .fwd_linear import fwd_linear
 from .fwd_attention import fwd_attention
 from ..random.wrapper import KeyArray
 
-@jaxtyped
-@typechecker
+# @jaxtyped
+# @typechecker
 def fwd_transformer_encoder(
     params: PyTree,
     src: F['bs src_len d_model'],
@@ -33,7 +33,7 @@ def fwd_transformer_encoder(
         t = dropout(subkeys[0], t)
     t = t + src_
     t = fwd_layer_norm(self_attn_layer_norm, t)
-    check_type('t', t, F['bs src_len d_ff'])
+    ### check_type('t', t, F['bs src_len d_ff'])
 
     t_ = t
     t = fwd_linear(ff0, t)
@@ -45,6 +45,6 @@ def fwd_transformer_encoder(
         t = dropout(subkeys[2], t)
     t = t + t_
     t = fwd_layer_norm(final_layer_norm, t)
-    check_type('t', t, F['bs src_len d_model'])
+    ### check_type('t', t, F['bs src_len d_model'])
 
     return t

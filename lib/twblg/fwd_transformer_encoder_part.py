@@ -6,8 +6,8 @@ from ..model.fwd_layer_norm import fwd_layer_norm
 from ..model.fwd_embedding import fwd_embedding
 from ..model.fwd_transformer_encoder import fwd_transformer_encoder
 
-@jaxtyped
-@typechecker
+# @jaxtyped
+# @typechecker
 def fwd_transformer_encoder_part(
     params: PyTree,
     src: U16['bs src_len'],
