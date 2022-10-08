@@ -9,7 +9,6 @@ def cross_entropy_loss(
     logits: F[Array, 'bs dst_len n_classes'],
     labels: U16[Array, 'bs dst_len'],
     mask_dec_1d: B[Array, 'bs dst_len'],
-    n_classes: int,  # TODO FIXMI: remove this parameter
 ) -> F[Array, '']:
     loss = optax.softmax_cross_entropy_with_integer_labels(logits=logits, labels=labels)
     loss *= mask_dec_1d
