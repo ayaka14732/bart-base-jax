@@ -115,7 +115,7 @@ def test():
             offset += 1
 
         s = ''.join(x)
-        assert ')(' not in s, 'two masks cannot be continuous'
+        assert ')(' not in s, 'masks cannot be continuous'
         print(s)
 
     def pretty_print_array(a: np.ndarray) -> str:
