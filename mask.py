@@ -122,7 +122,7 @@ def test():
         return f'[{", ".join(map(lambda x: f"{x:.4f}", a))}]'
 
     def undo_cumsum(a: np.ndarray) -> np.ndarray:
-        return np.diff(a, prepend=0)
+        return np.diff(a, prepend=0.)
 
     total_seq_len = 0
     total_mask_len = 0
@@ -142,9 +142,9 @@ def test():
             span_lens[span] += 1
 
     print(f'Proposed mask rate: {proposed_mask_rate:.2%}')
-    print(f'Actual mask rate: {total_mask_len / total_seq_len:.2%}')
+    print(f'Resulting mask rate: {total_mask_len / total_seq_len:.2%}')
     print(f'Proposed span length distribution: {pretty_print_array(undo_cumsum(np.array(probs_list[-1])))}')
-    print(f'Actual span length distribution: {pretty_print_array(normalise_probs(np.array(span_lens)))}')
+    print(f'Resulting span length distribution: {pretty_print_array(normalise_probs(np.array(span_lens)))}')
 
 if __name__ == '__main__':
     test()
