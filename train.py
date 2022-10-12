@@ -1,5 +1,6 @@
+import jax; jax.distributed.initialize()
+
 import functools
-import jax
 import jax.numpy as np
 import optax
 import time
@@ -10,8 +11,6 @@ from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
-
-jax.distributed.initialize()
 
 process_index = jax.process_index()
 

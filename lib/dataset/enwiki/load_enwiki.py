@@ -2,7 +2,7 @@ from glob import glob
 from os.path import expanduser
 from tqdm import tqdm
 
-def load_enwiki() -> list[str]:
+def load_enwiki(show_progress_bar=True) -> list[str]:
     filenames = glob(expanduser('~/.bart-base-jax/enwiki/dump2/*/*'))
     if not filenames:
         raise ValueError('Cannot find the dataset in ~/.bart-base-jax/enwiki/dump2.')
