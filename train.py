@@ -87,9 +87,6 @@ def main():
             if process_index == 0:
                 start_time = time.time()
 
-
-            batch = Data(*map(lambda a: a[process_index * 4:(process_index + 1) * 4], batch))
-
             key, subkey = split_key(key); subkeys = split_key(subkey, num=n_local_devices)  # force `subkeys` to be an array instead of a list
             replicated_params, replicated_opt_state, replicated_loss = train_step(
                 replicated_params,
