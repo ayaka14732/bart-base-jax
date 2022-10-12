@@ -8,7 +8,8 @@ def load_enwiki(show_progress_bar=True) -> list[str]:
         raise ValueError('Cannot find the dataset in ~/.bart-base-jax/enwiki/dump2.')
 
     sentences = []
-    for filename in tqdm(filenames):
+    filenames_iter = filenames if not show_progress_bar else tqdm(filenames)
+    for filename in filenames_iter:
         with open(filename, encoding='utf-8') as f:
             for line in f:
                 sentences.append(line.rstrip('\n'))

@@ -1,4 +1,5 @@
 import jax; jax.distributed.initialize()
+print(jax.device_count())
 
 import functools
 import jax.numpy as np
