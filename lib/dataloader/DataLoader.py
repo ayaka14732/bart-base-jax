@@ -13,8 +13,6 @@ from ..dataset.dummy.load_dummy import load_dummy
 from ..dataset.enwiki.load_enwiki import load_enwiki
 from ..random.wrapper import KeyArray, key2seed, split_key
 
-process_index = jax.process_index()
-
 class Data(NamedTuple):
     src: Array
     dst: Array
@@ -64,6 +62,8 @@ def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:
 
 class DataLoader:
     def __init__(self, dataset: str, key: KeyArray, batch_size: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
+        process_index = jax.process_index()
+
         if dataset == 'enwiki':
             sentences = load_enwiki(show_progress_bar=process_index == 0)
         elif dataset == 'dummy':

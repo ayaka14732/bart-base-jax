@@ -1,5 +1,4 @@
-import jax; jax.distributed.initialize()
-print(jax.device_count())
+import jax
 
 import functools
 import jax.numpy as np
@@ -12,11 +11,6 @@ from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
-
-process_index = jax.process_index()
-
-if process_index == 0: 
-    import wandb
 
 pad_token_id = 1  # BartTokenizer.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
@@ -43,6 +37,14 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
+    jax.distributed.initialize()
+    process_index = jax.process_index()
+    print(process_index)
+    jax.config.update('jax_platforms', 'cpu')
+
+    if process_index == 0: 
+        import wandb
+
     # hyperparameters
 
     devices = jax.devices()
