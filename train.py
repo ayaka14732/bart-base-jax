@@ -54,7 +54,7 @@ def main():
     print('Number of devices:', n_devices)
 
     n_epochs = 2
-    batch_size = 22 * n_devices  # 28 * n_devices
+    batch_size = 22 * n_local_devices  # 28 * n_devices
     learning_rate = 0.023
 
     if process_index == 0:

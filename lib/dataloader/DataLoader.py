@@ -63,6 +63,7 @@ def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:
 class DataLoader:
     def __init__(self, dataset: str, key: KeyArray, batch_size: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
         process_index = jax.process_index()
+        process_count = jax.process_count()
 
         if dataset == 'enwiki':
             sentences = load_enwiki(show_progress_bar=process_index == 0)
@@ -80,6 +81,9 @@ class DataLoader:
         self.should_shuffle = should_shuffle
 
     def __iter__(self):
+        process_index = jax.process_index()
+        process_count = jax.process_count()
+
         sentences = self.sentences
         key = self.key
         batch_size = self.batch_size
@@ -93,6 +97,10 @@ class DataLoader:
             seed = key2seed(subkey)
             rng = random.Random(seed)
             rng.shuffle(sentences)
+
+        # TODO: is it plausible to split sentences at preprocessing time?
+        sentences_per_process = len(sentences) // process_count
+        sentences = sentences[process_index * sentences_per_process:(process_index + 1) * sentences_per_process]
 
         sentences_chunked = chunks(sentences, chunk_size=chunk_size)
         n_sentences = len(sentences)
