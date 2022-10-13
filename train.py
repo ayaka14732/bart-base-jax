@@ -1,12 +1,12 @@
-
 import functools
 import jax
 import jax.numpy as np
 import jax_smi
 import optax
 import time
+import wandb
 
-from lib.dataloader.DataLoader import Data, DataLoader
+from lib.dataloader.DataLoader import DataLoader
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
@@ -38,34 +38,24 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 def main():
+    # initialisation
+
     jax.distributed.initialize()
     jax_smi.initialise_tracking()
-
+    jax.config.update('jax_platforms', 'cpu')  # avoid using TPU in subprocesses
     process_index = jax.process_index()
-    print(process_index)
-    jax.config.update('jax_platforms', 'cpu')
-
-    if process_index == 0: 
-        import wandb
+    if process_index == 0:
+        wandb.init(project='bart-pretraining')
 
     # hyperparameters
 
-    devices = jax.devices()
     n_devices = jax.device_count()
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
     print('Number of devices:', n_devices)
 
-    n_epochs = 2
-    batch_size = 22 * n_local_devices  # 28 * n_devices
-    learning_rate = 0.023
-
-    if process_index == 0:
-        wandb.init(project='bart-pretraining', config={
-            'n_epochs': n_epochs,
-            'batch_size': batch_size,
-            'learning_rate': learning_rate,
-        })
+    n_epochs = 10
+    batch_size = 28 * n_local_devices  # TODO: change to batch size on a single device
 
     key = seed2key(seed=42 + process_index)
 
@@ -76,7 +66,14 @@ def main():
     params = init_params(key=subkey)
 
     global optimizer
-    optimizer = optax.adam(learning_rate=learning_rate)
+    scheduler = optax.warmup_cosine_decay_schedule(
+        init_value=0.0001,
+        peak_value=0.0003,
+        warmup_steps=100000,
+        decay_steps=100000000,
+        end_value=0.00001
+    )
+    optimizer = optax.adam(learning_rate=scheduler)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
