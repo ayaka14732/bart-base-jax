@@ -52,15 +52,14 @@ def main():
     n_devices = jax.device_count()
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
-    print('Number of devices:', n_devices)
 
     n_epochs = 10
-    batch_size = 28 * n_local_devices  # TODO: change to batch size on a single device
+    batch_size_per_device = 28
 
     key = seed2key(seed=42 + process_index)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(dataset='enwiki', key=subkey, batch_size=batch_size, n_workers=50)
+    data_loader = DataLoader(dataset='enwiki', key=subkey, batch_size_per_device=batch_size_per_device, n_workers=50)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)

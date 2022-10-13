@@ -1,5 +1,5 @@
 import jax
-from jaxtyping import Array, Bool as B, UInt16 as U16, jaxtyped
+from jaxtyping import Array, Bool as B, Shaped as S, UInt16 as U16, jaxtyped
 import multiprocessing
 import numpy as onp
 import random
@@ -22,6 +22,18 @@ class Data(NamedTuple):
     mask_dec: Array
     mask_dec_enc: Array
     labels: Array
+
+@jaxtyped
+@typechecker
+def device_split(a: S[onp.ndarray, '...']) -> S[Array, '...']:
+    local_devices = jax.local_devices()
+    n_local_devices = jax.local_device_count()
+
+    '''Splits the first axis of `a` evenly across the number of devices.'''
+    batch_size, *shapes = a.shape
+    a = a.reshape(n_local_devices, batch_size // n_local_devices, *shapes)
+    b = jax.device_put_sharded(tuple(a), devices=local_devices)
+    return b
 
 @jaxtyped
 @typechecker
@@ -61,9 +73,9 @@ def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:
     return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
 
 class DataLoader:
-    def __init__(self, dataset: str, key: KeyArray, batch_size: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
+    def __init__(self, dataset: str, key: KeyArray, batch_size_per_device: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
         process_index = jax.process_index()
-        process_count = jax.process_count()
+        n_local_devices = jax.local_device_count()
 
         if dataset == 'enwiki':
             sentences = load_enwiki(show_progress_bar=process_index == 0)
@@ -71,6 +83,8 @@ class DataLoader:
             sentences = load_dummy()
         else:
             raise ValueError(f'Invalid dataset: {repr(dataset)}')
+
+        batch_size = batch_size_per_device * n_local_devices
 
         self.sentences = sentences
         self.key = key
