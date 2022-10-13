@@ -1,7 +1,8 @@
-import jax
 
 import functools
+import jax
 import jax.numpy as np
+import jax_smi
 import optax
 import time
 
@@ -38,6 +39,8 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
 
 def main():
     jax.distributed.initialize()
+    jax_smi.initialise_tracking()
+
     process_index = jax.process_index()
     print(process_index)
     jax.config.update('jax_platforms', 'cpu')
