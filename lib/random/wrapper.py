@@ -3,9 +3,13 @@ import jax.numpy as np
 import jax.random as rand
 from jaxtyping import Array as KeyArray
 
-device_cpu = jax.devices('cpu')[0]
+device_cpu = None
 
 def do_on_cpu(f):
+    global device_cpu
+    if device_cpu is None:
+        device_cpu = jax.devices('cpu')[0]
+
     def inner(*args, **kwargs):
         with jax.default_device(device_cpu):
             return f(*args, **kwargs)
