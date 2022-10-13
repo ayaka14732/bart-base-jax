@@ -64,14 +64,7 @@ def main():
     params = init_params(key=subkey)
 
     global optimizer
-    scheduler = optax.warmup_cosine_decay_schedule(
-        init_value=0.00001,
-        peak_value=0.0003,
-        warmup_steps=10000,
-        decay_steps=100000000,
-        end_value=0.00001,
-    )
-    optimizer = optax.adamw(learning_rate=scheduler)
+    optimizer = optax.lamb(learning_rate=0.00001)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
