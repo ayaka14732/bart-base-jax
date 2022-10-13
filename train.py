@@ -53,7 +53,8 @@ def main():
     n_local_devices = jax.local_device_count()
 
     n_epochs = 10
-    batch_size_per_device = 28
+    batch_size_per_device = 44
+    learning_rate = 0.023
 
     key = seed2key(seed=42 + process_index)
 
@@ -64,14 +65,7 @@ def main():
     params = init_params(key=subkey)
 
     global optimizer
-    scheduler = optax.warmup_cosine_decay_schedule(
-        init_value=0.0001,
-        peak_value=0.0003,
-        warmup_steps=100000,
-        decay_steps=100000000,
-        end_value=0.00001
-    )
-    optimizer = optax.adam(learning_rate=scheduler)
+    optimizer = optax.adam(learning_rate=learning_rate)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
