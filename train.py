@@ -53,7 +53,7 @@ def main():
     n_local_devices = jax.local_device_count()
 
     n_epochs = 10
-    batch_size_per_device = 64
+    batch_size_per_device = 128
 
     key = seed2key(seed=42 + process_index)
 
@@ -64,7 +64,7 @@ def main():
     params = init_params(key=subkey)
 
     global optimizer
-    optimizer = optax.lamb(learning_rate=0.00001)
+    optimizer = optax.lamb(learning_rate=0.0004)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
