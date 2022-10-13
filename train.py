@@ -54,7 +54,7 @@ def main():
 
     n_epochs = 10
     batch_size_per_device = 44
-    learning_rate = 0.023
+    learning_rate = 0.0002
 
     key = seed2key(seed=42 + process_index)
 
