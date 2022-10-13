@@ -100,8 +100,8 @@ class DataLoader:
             rng.shuffle(sentences)
 
         # TODO: is it plausible to split sentences at preprocessing time?
-        sentences_per_process = len(sentences) // process_count
-        sentences = sentences[process_index * sentences_per_process:(process_index + 1) * sentences_per_process]
+        sentences_per_device = len(sentences) // process_count
+        sentences = sentences[process_index * sentences_per_device:(process_index + 1) * sentences_per_device]
 
         sentences_chunked = chunks(sentences, chunk_size=self.chunk_size)
         n_sentences = len(sentences)
