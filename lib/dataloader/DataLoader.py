@@ -6,7 +6,6 @@ import random
 from typeguard import typechecked as typechecker
 from typing import Any, NamedTuple, Optional
 
-from .device_split import device_split
 from .ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from .tokenization_worker import tokenization_worker
 from ..dataset.dummy.load_dummy import load_dummy
