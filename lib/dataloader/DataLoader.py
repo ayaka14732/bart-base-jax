@@ -25,7 +25,7 @@ class Data(NamedTuple):
 @jaxtyped
 @typechecker
 def device_split(a: S[onp.ndarray, '...']) -> S[Array, '...']:
-    '''Splits the first axis of `a` evenly across the number of devices.'''
+    '''Splits the first axis of `a` evenly across all local devices.'''
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
