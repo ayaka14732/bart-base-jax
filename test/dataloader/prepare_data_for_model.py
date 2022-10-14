@@ -20,13 +20,4 @@ mask_dec_1d = inputs_dst.attention_mask.astype(onp.bool_)
 batch_size, _ = src.shape
 assert batch_size % jax.local_device_count() == 0
 
-print(src.shape)
-print(mask_enc_1d.shape)
-print(dst.shape)
-print(mask_dec_1d.shape)
-
-a = prepare_data_for_model(src, mask_enc_1d, dst, mask_dec_1d)
-
-for x in a:
-    print(x.shape)
-# print(a)
+prepare_data_for_model(src, mask_enc_1d, dst, mask_dec_1d)  # type checking will happen

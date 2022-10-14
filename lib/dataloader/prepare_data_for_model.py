@@ -22,11 +22,14 @@ def prepare_data_for_model(
     bos_id = 2
 
     if prepend_eos_for_dst:
-        eoss = onp.ones((batch_size, 1), dtype=onp.uint16) * bos_id
-        dst = onp.hstack((eoss, dst[:, 1:]))
+        arr_eos = onp.ones((batch_size, 1), dtype=onp.uint16) * bos_id
+        dst = onp.hstack((arr_eos, dst))
 
-        trues = onp.ones((batch_size, 1), dtype=onp.bool_)
-        mask_dec_1d = onp.hstack((trues, mask_dec_1d[:, 1:]))
+        arr_true = onp.ones((batch_size, 1), dtype=onp.bool_)
+        mask_dec_1d = onp.hstack((arr_true, mask_dec_1d))
+
+        arr_whatever = onp.ones((batch_size, 1), dtype=onp.uint16)
+        labels = onp.hstack((labels, arr_whatever))
     # end todo
 
     mask_enc = onp.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
