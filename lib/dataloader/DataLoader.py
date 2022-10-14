@@ -1,56 +1,15 @@
 import jax
-from jaxtyping import Array, Bool as B, UInt16 as U16, jaxtyped
 import multiprocessing
 import numpy as onp
 import random
-from typeguard import typechecked as typechecker
-from typing import Any, NamedTuple, Optional
+from typing import Any, Optional
 
-from .device_split import device_split
+from .prepare_data_for_model import prepare_data_for_model
 from .ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from .tokenization_worker import tokenization_worker
 from ..dataset.dummy.load_dummy import load_dummy
 from ..dataset.enwiki.load_enwiki import load_enwiki
 from ..random.wrapper import KeyArray, key2seed, split_key
-
-class Data(NamedTuple):
-    src: Array
-    dst: Array
-    mask_enc_1d: Array
-    mask_dec_1d: Array
-    mask_enc: Array
-    mask_dec: Array
-    mask_dec_enc: Array
-    labels: Array
-
-@jaxtyped
-@typechecker
-def make_data(
-    src: U16[onp.ndarray, 'bs src_len'],
-    mask_enc_1d: B[onp.ndarray, 'bs src_len'], 
-    dst: U16[onp.ndarray, 'bs dst_len'],
-    mask_dec_1d: B[onp.ndarray, 'bs dst_len'],
-) -> Data:
-    # TODO: is this part correct?
-    labels = dst
-
-    batch_size, *_ = dst.shape
-
-    bos_id = 2
-
-    eoss = onp.ones((batch_size, 1), dtype=onp.uint16) * bos_id
-    dst = onp.hstack((eoss, dst[:, 1:]))
-
-    trues = onp.ones((batch_size, 1), dtype=onp.bool_)
-    mask_dec_1d = onp.hstack((trues, mask_dec_1d[:, 1:]))
-    # end todo
-
-    mask_enc = onp.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-    mask_dec = onp.tril(onp.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
-    mask_dec_enc = onp.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
-
-    d = src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels
-    return Data(*map(device_split, d))
 
 def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:
     '''Yield successive n-sized chunks from lst.'''
@@ -83,8 +42,8 @@ class DataLoader:
         process_count = jax.process_count()
 
         # TODO: is it plausible to split sentences at preprocessing time?
-        n_sentences_per_device = len(sentences) // process_count
-        sentences = sentences[process_index * n_sentences_per_device:(process_index + 1) * n_sentences_per_device]
+        n_sentences_per_device = len(self.sentences) // process_count
+        sentences = self.sentences[process_index * n_sentences_per_device:(process_index + 1) * n_sentences_per_device]
 
         if self.should_shuffle:
             self.key, subkey = split_key(self.key)
@@ -129,7 +88,7 @@ class DataLoader:
                         dst_ = None
                         mask_dec_1d_ = None
 
-                        yield make_data(src, mask_enc_1d, dst, mask_dec_1d)
+                        yield prepare_data_for_model(src, mask_enc_1d, dst, mask_dec_1d)
                         break
 
                     else:
@@ -138,7 +97,7 @@ class DataLoader:
                         dst_ = None
                         mask_dec_1d_ = None
 
-                        yield make_data(src[:self.batch_size], mask_enc_1d[:self.batch_size], dst[:self.batch_size], mask_dec_1d[:self.batch_size])
+                        yield prepare_data_for_model(src[:self.batch_size], mask_enc_1d[:self.batch_size], dst[:self.batch_size], mask_dec_1d[:self.batch_size])
 
                         src = src[self.batch_size:]
                         mask_enc_1d = mask_enc_1d[self.batch_size:]
