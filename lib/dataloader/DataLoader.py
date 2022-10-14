@@ -82,15 +82,15 @@ class DataLoader:
         process_index = jax.process_index()
         process_count = jax.process_count()
 
+        # TODO: is it plausible to split sentences at preprocessing time?
+        n_sentences_per_device = len(sentences) // process_count
+        sentences = sentences[process_index * n_sentences_per_device:(process_index + 1) * n_sentences_per_device]
+
         if self.should_shuffle:
             self.key, subkey = split_key(self.key)
             seed = key2seed(subkey)
             rng = random.Random(seed)
             rng.shuffle(sentences)
-
-        # TODO: is it plausible to split sentences at preprocessing time?
-        sentences_per_device = len(sentences) // process_count
-        sentences = sentences[process_index * sentences_per_device:(process_index + 1) * sentences_per_device]
 
         sentences_chunked = chunks(sentences, chunk_size=self.chunk_size)
         n_sentences = len(sentences)
