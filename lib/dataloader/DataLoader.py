@@ -1,11 +1,12 @@
 import jax
-from jaxtyping import Array, Bool as B, Shaped as S, UInt16 as U16, jaxtyped
+from jaxtyping import Array, Bool as B, UInt16 as U16, jaxtyped
 import multiprocessing
 import numpy as onp
 import random
 from typeguard import typechecked as typechecker
 from typing import Any, NamedTuple, Optional
 
+from .device_split import device_split
 from .ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from .tokenization_worker import tokenization_worker
 from ..dataset.dummy.load_dummy import load_dummy
@@ -21,18 +22,6 @@ class Data(NamedTuple):
     mask_dec: Array
     mask_dec_enc: Array
     labels: Array
-
-@jaxtyped
-@typechecker
-def device_split(a: S[onp.ndarray, '...']) -> S[Array, '...']:
-    '''Splits the first axis of `a` evenly across all local devices.'''
-    local_devices = jax.local_devices()
-    n_local_devices = jax.local_device_count()
-
-    batch_size, *shapes = a.shape
-    a = a.reshape(n_local_devices, batch_size // n_local_devices, *shapes)
-    b = jax.device_put_sharded(tuple(a), devices=local_devices)
-    return b
 
 @jaxtyped
 @typechecker
