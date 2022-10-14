@@ -14,22 +14,24 @@ def prepare_data_for_model(
     mask_dec_1d: B[onp.ndarray, 'bs dst_len'],
 ) -> Data:
     # TODO: is this part correct?
+    batch_size, _ = dst.shape
+
     labels = dst
 
-    batch_size, *_ = dst.shape
-
+    prepend_eos_for_dst = True
     bos_id = 2
 
-    eoss = onp.ones((batch_size, 1), dtype=onp.uint16) * bos_id
-    dst = onp.hstack((eoss, dst[:, 1:]))
+    if prepend_eos_for_dst:
+        eoss = onp.ones((batch_size, 1), dtype=onp.uint16) * bos_id
+        dst = onp.hstack((eoss, dst[:, 1:]))
 
-    trues = onp.ones((batch_size, 1), dtype=onp.bool_)
-    mask_dec_1d = onp.hstack((trues, mask_dec_1d[:, 1:]))
+        trues = onp.ones((batch_size, 1), dtype=onp.bool_)
+        mask_dec_1d = onp.hstack((trues, mask_dec_1d[:, 1:]))
     # end todo
 
     mask_enc = onp.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
     mask_dec = onp.tril(onp.einsum('bi,bj->bij', mask_dec_1d, mask_dec_1d))[:, None]
     mask_dec_enc = onp.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
-    d = src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels
-    return Data(*map(device_split, d))
+    data = src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels
+    return Data(*map(device_split, data))
