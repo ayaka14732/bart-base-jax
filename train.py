@@ -7,6 +7,7 @@ import time
 import wandb
 
 from lib.dataloader.DataLoader import DataLoader
+from lib.dataset.enwiki import load_enwiki
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
@@ -57,8 +58,10 @@ def main():
 
     key = seed2key(seed=42 + process_index)
 
+    sentences = load_enwiki(show_progress_bar=process_index == 0)
+
     key, subkey = split_key(key)
-    data_loader = DataLoader(dataset='enwiki', key=subkey, batch_size_per_device=batch_size_per_device, n_workers=50)
+    data_loader = DataLoader(sentences, key=subkey, batch_size_per_device=batch_size_per_device, n_workers=50)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
