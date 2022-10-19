@@ -5,8 +5,8 @@ import random
 from typing import Any, Optional
 
 from .prepare_data_for_model import prepare_data_for_model
-from .ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from .tokenization_worker import tokenization_worker
+from ..ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 from ..random.wrapper import KeyArray, key2seed, split_key
 
 def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:

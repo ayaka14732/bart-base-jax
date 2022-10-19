@@ -9,17 +9,20 @@ class ProcessPoolExecutorWithQueueSizeLimit(ProcessPoolExecutor):
         self.queue_futures = Queue(maxsize=queue_size)
 
     def map(self, fn, *iterables):
+        done_marker = self.done_marker
+        queue_futures = self.queue_futures
+
         def usher():
             for args in zip(*iterables):
                 future = self.submit(fn, *args)
-                self.queue_futures.put(future)
-            self.queue_futures.put(self.done_marker)
+                queue_futures.put(future)
+            queue_futures.put(done_marker)
 
         thread = Thread(target=usher)
         thread.start()
 
         while True:
-            item = self.queue_futures.get()
-            if item is self.done_marker:
+            item = queue_futures.get()
+            if item is done_marker:
                 break
             yield item.result()  # item is a future
