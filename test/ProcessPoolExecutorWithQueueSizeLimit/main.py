@@ -5,8 +5,8 @@ import time
 
 from lib.ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
 
-def f(i, _):
-    print(f'c {i:02d}')
+def f(i, j):
+    print(f'c {i:02d} {j:02d}')
     return i
 
 def main():
@@ -15,7 +15,7 @@ def main():
     with ProcessPoolExecutorWithQueueSizeLimit(queue_size=4, max_workers=2, mp_context=ctx) as p:
         for i in p.map(f, range(16), range(16)):
             time.sleep(0.15)
-            print(f'm {i:02d}')
+            print(f'm {i:02d} {i:02d}')
 
 if __name__ == '__main__':
     main()
