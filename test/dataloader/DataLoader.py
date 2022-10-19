@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     sentences = load_dummy()
 
-    data_loader = DataLoader(sentences, key=key, batch_size_per_device=6, n_workers=32)
+    data_loader = DataLoader(sentences, key=key, batch_size_per_device=6, n_workers=8)
     for n_batches, batch in enumerate(data_loader):
         print(
             batch.src.shape,
