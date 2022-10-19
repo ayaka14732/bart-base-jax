@@ -7,7 +7,7 @@ import time
 import wandb
 
 from lib.dataloader.DataLoader import DataLoader
-from lib.dataset.enwiki import load_enwiki
+from lib.dataset.enwiki.load_enwiki import load_enwiki
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
