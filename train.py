@@ -6,11 +6,11 @@ import optax
 import time
 import wandb
 
-from lib.dataloader.DataLoader import DataLoader
 from lib.dataset.enwiki.load_enwiki import load_enwiki
 from lib.model.fwd_transformer import fwd_transformer
 from lib.param_utils.init_params import init_params
 from lib.param_utils.save_params import save_params
+from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
@@ -61,7 +61,7 @@ def main():
     sentences = load_enwiki(show_progress_bar=process_index == 0)
 
     key, subkey = split_key(key)
-    data_loader = DataLoader(sentences, key=subkey, batch_size_per_device=batch_size_per_device, n_workers=50)
+    preprocessor = Preprocessor(sentences, key=subkey, batch_size_per_device=batch_size_per_device, n_workers=50)
 
     key, subkey = split_key(key)
     params = init_params(key=subkey)
@@ -77,7 +77,7 @@ def main():
         if process_index == 0:
             epoch_loss = 0.
 
-        for step, batch in enumerate(data_loader):
+        for step, batch in enumerate(preprocessor):
             if process_index == 0:
                 start_time = time.time()
 

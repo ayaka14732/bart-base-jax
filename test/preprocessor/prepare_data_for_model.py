@@ -2,7 +2,7 @@ import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_f
 import jax; jax.config.update('jax_platforms', 'cpu')
 from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from lib.dataloader.prepare_data_for_model import prepare_data_for_model
+from lib.preprocessor.prepare_data_for_model import prepare_data_for_model
 from lib.tokeniser import BartTokenizerWithoutOverflowEOS
 
 tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base')
