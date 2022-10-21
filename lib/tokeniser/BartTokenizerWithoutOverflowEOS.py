@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as onp
 from transformers import BartTokenizer
 
 class BartTokenizerWithoutOverflowEOS(BartTokenizer):
@@ -19,7 +19,7 @@ class BartTokenizerWithoutOverflowEOS(BartTokenizer):
             input_ids_.append(input_id)
             attention_masks_.append(attention_mask)
 
-        input_ids = np.array(input_ids_, dtype=np.uint16)
-        attention_masks = np.array(attention_masks_, dtype=np.bool_)
+        input_ids = onp.array(input_ids_, dtype=onp.uint16)
+        attention_masks = onp.array(attention_masks_, dtype=onp.bool_)
 
         return input_ids, attention_masks

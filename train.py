@@ -14,7 +14,7 @@ from lib.param_utils.save_params import save_params
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-pad_token_id = 1  # BartTokenizer.from_pretrained('facebook/bart-base').pad_token_id
+pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
 
 @jax.jit
