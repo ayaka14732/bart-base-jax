@@ -12,10 +12,7 @@ def distort_sentence(wakong: Callable, sentence: str) -> str:
     masked_words = wakong(words, mask_token='<mask>')
     return ' '.join(masked_words)
 
-def tokenization_worker(x) -> np.ndarray:
-    # sentences: list[str], key: KeyArray
-    sentences, key = x
-
+def tokenization_worker(sentences: list[str], key: KeyArray) -> np.ndarray:
     seed = key2seed(key)  # TODO: optimisation: avoid seed conversion on every function call
     wakong = Wakong(seed=seed)
 
