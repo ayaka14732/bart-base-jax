@@ -3,7 +3,7 @@ from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve
 import multiprocessing
 import time
 
-from lib.ProcessPoolExecutorWithQueueSizeLimit import ProcessPoolExecutorWithQueueSizeLimit
+from lib.utils import ProcessPoolExecutorWithQueueSizeLimit
 
 def f(i, j):
     print(f'c {i:02d} {j:02d}')
