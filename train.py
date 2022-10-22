@@ -67,7 +67,10 @@ def main():
     params = init_params(key=subkey)
 
     global optimizer
-    optimizer = optax.lamb(learning_rate=0.0004)
+    optimizer = optax.chain(
+        optax.adaptive_grad_clip(0.1, eps=0.001),
+        optax.sgd(learning_rate=0.03),
+    )
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
