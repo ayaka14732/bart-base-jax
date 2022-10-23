@@ -140,7 +140,9 @@ def main():
                     )
                     batch_loss_eval = replicated_batch_loss_eval[0].item()
                     total_loss_eval += batch_loss_eval
-                wandb.log({'eval loss': total_loss_eval})
+
+                if process_index == 0:
+                    wandb.log({'eval loss': total_loss_eval})
 
         if process_index == 0:
             epoch_loss_train /= step
