@@ -65,6 +65,9 @@ def main():
     batch_size_per_device_train = 80
     batch_size_per_device_eval = 80
 
+    eval_every_n_steps = 1024
+    save_every_n_steps = 20480
+
     key = seed2key(seed=42 + process_index)
 
     sentences_train = load_enwiki(show_progress_bar=process_index == 0)
@@ -118,15 +121,17 @@ def main():
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time})
 
-                if step % 2000 == 0:
-                    # save params
+                # save params
+                if step % save_every_n_steps == 0:
                     params = jax.tree_map(lambda x: x[0], replicated_params)
                     filename = f'{wandb.run.name}-{epoch}-{step}.dat'
                     save_params(params, filename)
 
             # eval
-            if step % 2000 == 0:
-                total_loss_eval = 0.
+            if step % eval_every_n_steps == 0:
+                if process_index == 0:
+                    total_loss_eval = 0.
+
                 for batch_eval in preprocessor_eval:
                     replicated_batch_loss_eval = eval_step(
                         replicated_params,
@@ -138,8 +143,9 @@ def main():
                         batch_eval.mask_dec_enc,
                         batch_eval.labels,
                     )
-                    batch_loss_eval = replicated_batch_loss_eval[0].item()
-                    total_loss_eval += batch_loss_eval
+                    if process_index == 0:
+                        batch_loss_eval = replicated_batch_loss_eval[0].item()
+                        total_loss_eval += batch_loss_eval
 
                 if process_index == 0:
                     wandb.log({'eval loss': total_loss_eval})
@@ -148,9 +154,10 @@ def main():
             epoch_loss_train /= step
             wandb.log({'epoch loss': epoch_loss_train})
 
-            # params = jax.tree_map(lambda x: x[0], replicated_params)
-            # filename = f'{wandb.run.name}-{epoch}.dat'
-            # save_params(params, filename)
+            # save params
+            params = jax.tree_map(lambda x: x[0], replicated_params)
+            filename = f'{wandb.run.name}-{epoch}.dat'
+            save_params(params, filename)
 
 if __name__ == '__main__':
     main()
