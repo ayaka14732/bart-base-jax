@@ -115,14 +115,14 @@ def main():
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time})
 
-                if step % 20000 == 0:
+                if step % 2000 == 0:
                     # save params
                     params = jax.tree_map(lambda x: x[0], replicated_params)
                     filename = f'{wandb.run.name}-{epoch}-{step}.dat'
                     save_params(params, filename)
 
             # eval
-            if step % 20000 == 0:
+            if step % 2000 == 0:
                 total_loss_eval = 0.
                 for batch_eval in preprocessor_eval:
                     replicated_batch_loss_eval = eval_step(
@@ -144,9 +144,9 @@ def main():
             epoch_loss_train /= step
             wandb.log({'epoch loss': epoch_loss_train})
 
-            params = jax.tree_map(lambda x: x[0], replicated_params)
-            filename = f'{wandb.run.name}-{epoch}.dat'
-            save_params(params, filename)
+            # params = jax.tree_map(lambda x: x[0], replicated_params)
+            # filename = f'{wandb.run.name}-{epoch}.dat'
+            # save_params(params, filename)
 
 if __name__ == '__main__':
     main()
