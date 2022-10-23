@@ -71,7 +71,7 @@ def main():
     key = seed2key(seed=42 + process_index)
 
     sentences_train = load_enwiki(show_progress_bar=process_index == 0)
-    sentences_eval = sentences_train[-4480:]  # TODO: split train/eval
+    sentences_eval = sentences_train[-6400:]  # TODO: split train/eval
 
     key, subkey = split_key(key)
     preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=16)
@@ -119,7 +119,7 @@ def main():
                 batch_loss_train = replicated_batch_loss_train[0].item()
                 epoch_loss_train += batch_loss_train
                 elapsed_time = time.time() - start_time
-                wandb.log({'train loss': batch_loss_train, 'time': elapsed_time})
+                wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
                 # save params
                 if step % save_every_n_steps == 0:
@@ -148,11 +148,14 @@ def main():
                         total_loss_eval += batch_loss_eval
 
                 if process_index == 0:
-                    wandb.log({'eval loss': total_loss_eval})
+                    wandb.log({'eval loss': total_loss_eval}, commit=False)
+
+            if process_index == 0:
+                wandb.log({}, commit=True)
 
         if process_index == 0:
             epoch_loss_train /= step
-            wandb.log({'epoch loss': epoch_loss_train})
+            wandb.log({'epoch loss': epoch_loss_train}, commit=False)
 
             # save params
             params = jax.tree_map(lambda x: x[0], replicated_params)
