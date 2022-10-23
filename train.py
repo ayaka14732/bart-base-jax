@@ -71,7 +71,7 @@ def main():
     key = seed2key(seed=42 + process_index)
 
     sentences_train = load_enwiki(show_progress_bar=process_index == 0)
-    sentences_eval = sentences_train[:4480]  # TODO: split train/eval
+    sentences_eval = sentences_train[-4480:]  # TODO: split train/eval
 
     key, subkey = split_key(key)
     preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=16)
