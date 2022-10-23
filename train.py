@@ -50,7 +50,7 @@ def main():
 
     jax.distributed.initialize()
     jax_smi.initialise_tracking()
-    jax.config.update('jax_platforms', 'cpu')  # avoid using TPU in subprocesses
+    jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
         wandb.init(project='bart-pretraining')
