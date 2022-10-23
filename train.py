@@ -130,7 +130,6 @@ def main():
                 for batch_eval in preprocessor_eval:
                     replicated_batch_loss_eval = eval_step(
                         replicated_params,
-                        replicated_opt_state,
                         batch_eval.src,
                         batch_eval.dst,
                         batch_eval.mask_dec_1d,
