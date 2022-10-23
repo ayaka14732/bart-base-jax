@@ -60,7 +60,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 10
+    n_epochs = 12
 
     batch_size_per_device_train = 80
     batch_size_per_device_eval = 80
