@@ -13,3 +13,11 @@ __pycache__
 /3.py
 /external-ips.txt
 .nfs*
+
+# 1_build_vocab_mapping.py
+
+/STCharacters.txt
+/TSCharacters.txt
+/vocab-bart-base-chinese.txt
+
+/vocab_mapping.txt

@@ -1,6 +1,7 @@
 autopep8
 tqdm
 wandb
+gdown
 datasets~=2.3.2
 torch~=1.12.1
 jax==0.3.23
