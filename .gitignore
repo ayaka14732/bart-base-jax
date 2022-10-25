@@ -25,3 +25,6 @@ __pycache__
 # 3_add_cantonese_tokens.py
 /yue.txt
 /add_token.txt
+
+# 4_replace_embedding.py
+/vocab-bart-base-cantonese.txt
