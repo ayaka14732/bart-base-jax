@@ -19,10 +19,8 @@ vocab_new = set()
 with open('vocab_mapping.txt', encoding='utf-8') as f:
     for line in f:
         token, token_id = line.rstrip('\n').rsplit(' ', 1)
-
         if is_unused(token):
             continue
-
         vocab_new.add(token)
 
 ########
@@ -55,5 +53,4 @@ for c in cjkv_new:
 ########
 
 with open('add_token.txt', 'w', encoding='utf-8') as f:
-    for c in sorted(cs):
-        print(c, file=f)
+    print(''.join(sorted(cs)), file=f)
