@@ -1,10 +1,10 @@
-from transformers import BertTokenizer
 from typing import Callable
 import jax.numpy as np
 from wakong import Wakong
 
 from .split_cantonese_sentence import split_cantonese_sentence
 from ..random.wrapper import KeyArray, key2seed
+from ..tokeniser import BartTokenizerWithoutOverflowEOS
 
 tokenizer = None
 
@@ -19,7 +19,7 @@ def tokenization_worker(sentences: list[str], key: KeyArray) -> np.ndarray:
 
     global tokenizer
     if tokenizer is None:
-        tokenizer = BertTokenizer.from_pretrained('./vocab-bart-base-cantonese.txt')
+        tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base')
 
     distorted_sentences = [distort_sentence(wakong, sentence) for sentence in sentences]
 
