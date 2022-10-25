@@ -19,7 +19,7 @@ def prepare_data_for_model(
     labels = dst
 
     prepend_eos_for_dst = True
-    eos_id = 2
+    eos_id = 102
 
     if prepend_eos_for_dst:
         arr_eos = onp.ones((batch_size, 1), dtype=onp.uint16) * eos_id

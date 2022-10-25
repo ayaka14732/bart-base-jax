@@ -14,7 +14,7 @@ def chunks(lst: list[Any], chunk_size: int) -> list[list[Any]]:
     return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
 
 class Preprocessor:
-    def __init__(self, sentences: list[str], key: KeyArray, batch_size_per_device: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=1024, should_shuffle: bool=True):
+    def __init__(self, sentences: list[str], key: KeyArray, batch_size_per_device: int, n_workers: Optional[int]=None, queue_size: int=64, chunk_size: Optional[int]=2048, should_shuffle: bool=True):
         n_local_devices = jax.local_device_count()
         process_index = jax.process_index()
         process_count = jax.process_count()

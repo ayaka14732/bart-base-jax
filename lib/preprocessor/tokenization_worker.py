@@ -2,14 +2,15 @@ from typing import Callable
 import jax.numpy as np
 from wakong import Wakong
 
+from .split_cantonese_sentence import split_cantonese_sentence
 from ..random.wrapper import KeyArray, key2seed
 from ..tokeniser import BartTokenizerWithoutOverflowEOS
 
 tokenizer = None
 
 def distort_sentence(wakong: Callable, sentence: str) -> str:
-    words = sentence.split(' ')  # TODO: possibility to use Blingfire?
-    masked_words = wakong(words, mask_token='<mask>')
+    words = split_cantonese_sentence(sentence)
+    masked_words = wakong(words, mask_token='[MASK]')
     return ' '.join(masked_words)
 
 def tokenization_worker(sentences: list[str], key: KeyArray) -> np.ndarray:
