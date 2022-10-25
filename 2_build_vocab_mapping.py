@@ -85,7 +85,7 @@ for token_new, candidate_token_ids in token_new_to_candidate_token_ids.items():
             in candidate_token_ids
         ]
 
-        # print(token_new, ''.join(candidate_tokens))  # for debug
+        # print(token_new, ''.join(candidate_tokens))  # for generating `preferences`
 
         preferences = {
             '麼': '么',  # 么麽
@@ -95,7 +95,7 @@ for token_new, candidate_token_ids in token_new_to_candidate_token_ids.items():
             '徵': '征',  # 徵征
             '鍾': '钟',  # 钟锺
             '諮': '咨',  # 咨谘
-            '麪': '面',  # 麺面
+            '麪': '麺',  # 麺面
         }
         candidate_token = preferences[token_new]  # guaranteed that `token_new` is always inside `preferences`
         token_id_new = token_to_token_id[candidate_token]
