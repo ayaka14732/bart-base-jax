@@ -14,10 +14,14 @@ __pycache__
 /external-ips.txt
 .nfs*
 
-# 1_build_vocab_mapping.py
-
+# 1_download_conv_table.py
 /STCharacters.txt
 /TSCharacters.txt
-/vocab-bart-base-chinese.txt
 
+# 2_build_vocab_mapping.py
+/vocab-bart-base-chinese.txt
 /vocab_mapping.txt
+
+# 3_add_cantonese_tokens.py
+/yue.txt
+/add_token.txt

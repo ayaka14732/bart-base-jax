@@ -1,73 +1,11 @@
 from collections import defaultdict
-import regex as re
 from transformers import BertTokenizer
 
-from lib.utils.download_file import download_file
-
-###########
-
-download_file('https://raw.githubusercontent.com/StarCC0/dict/main/STCharacters.txt', 'STCharacters.txt')
-download_file('https://raw.githubusercontent.com/StarCC0/dict/main/TSCharacters.txt', 'TSCharacters.txt')
-
-###########
+from lib.vocab import token_id_to_token, token_to_token_id, \
+    conv_table, is_alpha_char, is_cjkv
 
 tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 tokenizer.save_vocabulary('vocab-bart-base-chinese.txt')
-
-###########
-
-pattern_should_remove = re.compile(r'##[\p{Unified_Ideograph}\u3006\u3007]')
-
-def should_remove(token: str) -> bool:
-    return bool(pattern_should_remove.fullmatch(token))
-
-###########
-
-token_to_token_id = {}
-token_id_to_token = {}
-
-with open('vocab-bart-base-chinese.txt', encoding='utf-8') as f:
-    for token_id, line in enumerate(f):
-        token = line.rstrip('\n')
-
-        if should_remove(token):
-            continue
-
-        token_to_token_id[token] = token_id
-        token_id_to_token[token_id] = token
-
-###########
-
-conv_table = {}
-
-with open('STCharacters.txt', encoding='utf-8') as f:
-    for line in f:
-        simp, trads = line.rstrip('\n').split('\t')
-        trads = ''.join(trads.split(' '))
-        conv_table[simp] = trads
-
-###########
-
-# alpha character: characters with multiple simplified forms and one of them is the same as the original one
-
-alpha_chars = set()
-
-with open('TSCharacters.txt', encoding='utf-8') as f:
-    for line in f:
-        trad, simps = line.rstrip('\n').split('\t')
-        simps = simps.split(' ')
-        if trad in simps:
-            alpha_chars.add(trad)
-
-def is_alpha_char(c: str) -> bool:
-    return c in alpha_chars
-
-###########
-
-pattern_is_cjkv = re.compile(r'[\p{Unified_Ideograph}\u3006\u3007]')
-
-def is_cjkv(token: str) -> bool:
-    return bool(pattern_is_cjkv.fullmatch(token))
 
 ###########
 
@@ -134,6 +72,8 @@ token_new_to_candidate_token_ids = {
 
 ###########
 
+token_new_to_token_id_new = []
+
 for token_new, candidate_token_ids in token_new_to_candidate_token_ids.items():
     if len(candidate_token_ids) == 1:
         token_id_new = next(iter(candidate_token_ids))
@@ -163,4 +103,8 @@ for token_new, candidate_token_ids in token_new_to_candidate_token_ids.items():
     else:  # len(candidate_token_ids) == 0
         raise ValueError('The length of `candidate_token_ids` should not be zero.')
 
-    print(token_new, token_id_new)
+    token_new_to_token_id_new.append((token_new, token_id_new))
+
+with open('vocab_mapping.txt', 'w', encoding='utf-8') as f:
+    for token_new, token_id_new in token_new_to_token_id_new:
+        print(token_new, token_id_new, file=f)
