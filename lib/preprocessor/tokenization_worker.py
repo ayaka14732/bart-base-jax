@@ -22,8 +22,9 @@ def tokenization_worker(sentences: list[str], key: KeyArray) -> np.ndarray:
 
     distorted_sentences = [distort_sentence(wakong, sentence) for sentence in sentences]
 
-    src, mask_enc_1d = tokenizer(distorted_sentences, max_length=256)
-    dst, mask_dec_1d = tokenizer(sentences, max_length=256-1)
+    max_length = 64
+    src, mask_enc_1d = tokenizer(distorted_sentences, max_length=max_length)
+    dst, mask_dec_1d = tokenizer(sentences, max_length=max_length-1)
     # TODO: add a reminder about these default settings:
     # - `return_tensors='np'`
     # - `add_prefix_space=True`
