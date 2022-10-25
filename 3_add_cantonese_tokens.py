@@ -50,7 +50,7 @@ for c in text:
 cs = set()
 for c in cjkv_new:
     if c not in vocab_old:
-        cs.append(c)
+        cs.add(c)
 
 ########
 
