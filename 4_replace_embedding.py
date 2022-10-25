@@ -75,7 +75,7 @@ emb_all = np.vstack(emb_all)
 
 ##########
 
-with open('vocab-bart-base-cantonese.txt') as f:
+with open('vocab-bart-base-cantonese.txt', 'w', encoding='utf-8') as f:
     for token in vocab:
         print(token, file=f)
 
