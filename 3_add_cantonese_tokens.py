@@ -2,7 +2,7 @@ from collections import Counter
 from random import Random
 from transformers import BertTokenizerFast
 
-from lib.dataset.lihkg.load_lihkg import load_lihkg
+from lib.dataset.lihkg import load_lihkg
 from lib.vocab import token_to_token_id as vocab_old, is_unused, is_cjkv
 
 rng = Random(42)

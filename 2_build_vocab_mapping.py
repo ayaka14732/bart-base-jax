@@ -1,8 +1,7 @@
 from collections import defaultdict
 from transformers import BertTokenizer
 
-from lib.vocab import token_id_to_token, token_to_token_id, \
-    conv_table, is_alpha_char, is_cjkv
+from lib.vocab import token_id_to_token, token_to_token_id, conv_table, is_alpha_char, is_cjkv
 
 tokenizer = BertTokenizer.from_pretrained('fnlp/bart-base-chinese')
 tokenizer.save_vocabulary('vocab-bart-base-chinese.txt')
