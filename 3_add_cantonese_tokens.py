@@ -47,7 +47,13 @@ for c in text:
 
 ########
 
+cs = set()
+for c in cjkv_new:
+    if c not in vocab_old:
+        cs.append(c)
+
+########
+
 with open('add_token.txt', 'w', encoding='utf-8') as f:
-    for c in cjkv_new:
-        if c not in vocab_old:
-            print(c, file=f)
+    for c in sorted(cs):
+        print(c, file=f)
