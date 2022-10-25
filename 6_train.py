@@ -73,7 +73,7 @@ def main():
     from random import Random
     rng = Random(42)
     sentences = load_lihkg()
-    sentences = rng.shuffle(sentences)
+    rng.shuffle(sentences)
     sentences_train = sentences[6400:]
     sentences_eval = sentences[:6400]
     del Random, rng, sentences
