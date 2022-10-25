@@ -7,7 +7,7 @@ import wandb
 
 from lib.dataset.lihkg import load_lihkg
 from lib.model import fwd_transformer
-from lib.param_utils.init_params import init_params
+from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
@@ -84,8 +84,7 @@ def main():
     key, subkey = split_key(key)
     preprocessor_eval = Preprocessor(sentences_eval, key=subkey, batch_size_per_device=batch_size_per_device_eval, n_workers=16)
 
-    key, subkey = split_key(key)
-    params = init_params(key=subkey)
+    params = load_params('untrained_params.dat')
 
     global optimizer
     optimizer = optax.chain(
