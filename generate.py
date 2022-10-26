@@ -1,10 +1,11 @@
-import jax
+import jax; jax.config.update('jax_platforms', 'cpu')
 import jax.numpy as np
+import regex as re
+from transformers import BartConfig, BertTokenizer
 
 from lib.Generator import Generator
 from lib.model import fwd_embedding, fwd_layer_norm, fwd_transformer_encoder
 from lib.param_utils.load_params import load_params
-from lib.tokeniser import BartTokenizerWithoutOverflowEOS
 
 def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarray:
     # params
@@ -27,22 +28,39 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
 
     return src
 
-tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base')
+tokenizer = BertTokenizer.from_pretrained('./vocab-bart-base-cantonese.txt')
 
-sentences = ['Can you see the beautiful flowers <mask> alongside the track?', 'Upon graduation, <mask> of herself.']
-batch = tokenizer(sentences, padding=True, return_tensors='jax')
-
-src = batch.input_ids
-mask_enc_1d = batch.attention_mask.astype(np.bool_)
-mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
-
-params = load_params('params_bart_base_en.dat')
+params = load_params('electric-glade-5-4-225280.dat')
 params = jax.tree_map(np.asarray, params)
 
-encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
+config = BartConfig.from_pretrained('fnlp/bart-base-chinese', vocab_size=12660)
+generator = Generator(params, config=config)
 
-generator = Generator(params)
-generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5)
+def clean_up_spaces(s: str) -> str:
+    s = re.sub(r'(?<=[\p{Unified_Ideograph}\u3006\u3007，。！？《》]) (?=[\p{Unified_Ideograph}\u3006\u3007，。！？《》])', '', s)
+    s = re.sub(r'(?<=[a-zA-Z]) (?=[.,])', '', s)
+    return s
 
-decoded_sentences = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-print(decoded_sentences)
+def text_infilling(sentences: list[str]) -> list[str]:
+    batch = tokenizer(sentences, padding=True, return_tensors='jax')
+
+    src = batch.input_ids.astype(np.uint16)
+    mask_enc_1d = batch.attention_mask.astype(np.bool_)
+    mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
+
+    encoder_last_hidden_output = fwd_encode(params, src, mask_enc)
+    generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=100)
+
+    decoded_sentences = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    decoded_sentences = [clean_up_spaces(s) for s in decoded_sentences]
+    return decoded_sentences
+
+sentences = [
+    '呢兩樣嘢二選一，你會[MASK]個？',
+    '企出來面對呢件事嘅人係佢，[MASK]我',
+    '杯奶茶要熱定[MASK]？',
+    '聽日就要返香港，我激動到[MASK]唔着',
+    '記得揀有防滑功能嘅鞋底，[MASK]親呀！',
+]
+for result in text_infilling(sentences):
+    print(result)
