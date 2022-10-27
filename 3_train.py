@@ -22,7 +22,7 @@ def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_en
     outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
-    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d) / len(labels)
+    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
     return loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
@@ -42,7 +42,7 @@ def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, l
     outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
     lm_head = params['embedding']['embedding'].T
     logits = outputs @ lm_head
-    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d) / len(labels)
+    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
     return loss
 
 def main():
