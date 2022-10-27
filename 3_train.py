@@ -84,7 +84,7 @@ def main():
     key, subkey = split_key(key)
     preprocessor_eval = Preprocessor(sentences_eval, key=subkey, batch_size_per_device=batch_size_per_device_eval, n_workers=16)
 
-    params = load_params('untrained_params.dat')
+    params = load_params('electric-glade-5-7-61440.dat')
 
     global optimizer
     optimizer = optax.chain(
