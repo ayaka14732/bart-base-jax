@@ -3,7 +3,7 @@ from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve
 
 from lib.tokeniser import BartTokenizerWithoutOverflowEOS
 
-tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('./vocab-bart-base-cantonese.txt')
+tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('Ayaka/bart-base-cantonese')
 
 sentences = ['a a', 'go go go', 'hi hi hi hi', '㷫㷫㷫㷫㷫']
 max_length = 5

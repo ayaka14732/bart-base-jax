@@ -19,7 +19,7 @@ def tokenization_worker(sentences: list[str], key: KeyArray) -> np.ndarray:
 
     global tokenizer
     if tokenizer is None:
-        tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('./vocab-bart-base-cantonese.txt')
+        tokenizer = BartTokenizerWithoutOverflowEOS.from_pretrained('Ayaka/bart-base-cantonese')
 
     distorted_sentences = [distort_sentence(wakong, sentence) for sentence in sentences]
 

@@ -28,7 +28,7 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
 
     return src
 
-tokenizer = BertTokenizer.from_pretrained('./vocab-bart-base-cantonese.txt')
+tokenizer = BertTokenizer.from_pretrained('Ayaka/bart-base-cantonese')
 
 params = load_params('electric-glade-5-7-40960.dat')
 params = jax.tree_map(np.asarray, params)

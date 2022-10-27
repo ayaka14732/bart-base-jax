@@ -13,7 +13,7 @@ from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-pad_token_id = 0  # BertTokenizer.from_pretrained('./vocab-bart-base-cantonese.txt').pad_token_id
+pad_token_id = 0  # BertTokenizer.from_pretrained('Ayaka/bart-base-cantonese').pad_token_id
 optimizer = None
 
 @jax.jit
