@@ -6,15 +6,11 @@ from transformers import BartConfig, BartModel, FlaxBartModel
 from lib.param_utils.load_params import load_params
 from lib.param_utils.jax2flax import jax2flax
 
-params = load_params('electric-glade-5-7-40960.dat')
+params = load_params('electric-glade-5-7-61440.dat')
 vocab_size, *_ = params['embedding']['embedding'].shape
 
 params_flax = jax2flax(params)
 params_flax = jax.tree_map(np.asarray, params_flax)
-print(list(params_flax))
-print(list(params_flax['shared']))
-print(list(params_flax['encoder']))
-print(list(params_flax['decoder']))
 
 config = BartConfig.from_pretrained('fnlp/bart-base-chinese', vocab_size=12660)
 model_flax = FlaxBartModel(config=config)
