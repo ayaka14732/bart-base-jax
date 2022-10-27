@@ -30,7 +30,7 @@ def fwd_encode(params: dict, src: np.ndarray, mask_enc: np.ndarray) -> np.ndarra
 
 tokenizer = BertTokenizer.from_pretrained('./vocab-bart-base-cantonese.txt')
 
-params = load_params('electric-glade-5-5-20480.dat')
+params = load_params('electric-glade-5-7-40960.dat')
 params = jax.tree_map(np.asarray, params)
 
 config = BartConfig.from_pretrained('fnlp/bart-base-chinese', vocab_size=12660)
