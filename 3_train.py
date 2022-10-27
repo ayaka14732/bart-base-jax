@@ -62,11 +62,11 @@ def main():
 
     n_epochs = 12
 
-    batch_size_per_device_train = 80
-    batch_size_per_device_eval = 80
+    batch_size_per_device_train = 20
+    batch_size_per_device_eval = 160
 
     eval_every_n_steps = 1024
-    save_every_n_steps = 20480
+    save_every_n_steps = 40960
 
     key = seed2key(seed=42 + process_index)
 
