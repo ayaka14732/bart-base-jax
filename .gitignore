@@ -13,18 +13,3 @@ __pycache__
 /3.py
 /external-ips.txt
 .nfs*
-
-# 1_download_conv_table.py
-/STCharacters.txt
-/TSCharacters.txt
-
-# 2_build_vocab_mapping.py
-/vocab-bart-base-chinese.txt
-/vocab_mapping.txt
-
-# 3_add_cantonese_tokens.py
-/yue.txt
-/add_token.txt
-
-# 4_replace_embedding.py
-/vocab-bart-base-cantonese.txt
