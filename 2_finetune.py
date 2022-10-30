@@ -83,11 +83,31 @@ def main():
     params = load_params('params_merged.dat')
     params = jax.tree_map(np.asarray, params)
 
+    learning_rate = 0.03
+    param_labels = {
+        'encoder_embedding': 'freeze',
+        'encoder_embed_positions': 'freeze',
+        'encoder_embed_layer_norm': 'freeze',
+        'encoder_layers': ['freeze'] * 2 + ['train'] * 8 + ['freeze'] * 2,
+        'decoder_embedding': 'freeze',
+        'decoder_embed_positions': 'freeze',
+        'decoder_embed_layer_norm': 'freeze',
+        'decoder_layers': 'freeze',
+        'lm_head': 'freeze',
+    }
+    optimizer_scheme = {
+        'train': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate),
+        ),
+        'freeze': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate * 0.1),
+        ),
+    }
+
     global optimizer
-    optimizer = optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=0.03),
-    )
+    optimizer = optax.multi_transform(optimizer_scheme, param_labels)
     opt_state = optimizer.init(params)
 
     for epoch in range(n_epochs):
