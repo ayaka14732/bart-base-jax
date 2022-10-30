@@ -1,3 +1,5 @@
+import jax
+import jax.numpy as np
 from jaxtyping import Bool as B, UInt16 as U16, jaxtyped
 import numpy as onp
 from typeguard import typechecked
@@ -37,4 +39,4 @@ def prepare_data_for_model(
     mask_dec_enc = onp.einsum('bi,bj->bij', mask_dec_1d, mask_enc_1d)[:, None]
 
     data = src, dst, mask_enc_1d, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels
-    return Data(*map(device_split, data))
+    return Data(*map(np.asarray, data))

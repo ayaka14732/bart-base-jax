@@ -1,5 +1,5 @@
-import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_force_host_platform_device_count=8'
-import jax; jax.config.update('jax_platforms', 'cpu'); jax.config.update('jax_disable_jit', True)
+import jax
+import jax.numpy as np
 
 import functools
 import jax_smi
@@ -28,19 +28,16 @@ def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_en
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
     return loss
 
-@functools.partial(jax.pmap, axis_name='n_devices')
+@jax.jit
 def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     loss, grads = train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
-
-    grads = jax.lax.psum(grads, axis_name='n_devices')
-    loss = jax.lax.psum(loss, axis_name='n_devices')
 
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = optax.apply_updates(params, updates)
 
     return params, opt_state, loss
 
-@functools.partial(jax.pmap, axis_name='n_devices')
+@jax.jit
 def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
     outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
     lm_head = params['lm_head']
@@ -65,8 +62,8 @@ def main():
 
     n_epochs = 12
 
-    batch_size_per_device_train = 80
-    batch_size_per_device_dev = 80
+    batch_size_per_device_train = 24
+    batch_size_per_device_dev = 24
 
     eval_every_n_steps = 1024
     save_every_n_steps = 20480
@@ -77,13 +74,14 @@ def main():
     sentences_dev = load_sentences(split='dev')
 
     key, subkey = split_key(key)
-    preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=16)
+    preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=3)
 
     key, subkey = split_key(key)
-    preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=16)
+    preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=3)
 
     key, subkey = split_key(key)
     params = load_params('params_merged.dat')
+    params = jax.tree_map(np.asarray, params)
 
     global optimizer
     optimizer = optax.chain(
@@ -91,9 +89,6 @@ def main():
         optax.sgd(learning_rate=0.03),
     )
     opt_state = optimizer.init(params)
-
-    replicated_params = jax.device_put_replicated(params, local_devices)
-    replicated_opt_state = jax.device_put_replicated(opt_state, local_devices)
 
     for epoch in range(n_epochs):
         if process_index == 0:
@@ -103,10 +98,10 @@ def main():
             if process_index == 0:
                 start_time = time.time()
 
-            key, subkey = split_key(key); subkeys = split_key(subkey, num=n_local_devices)  # force `subkeys` to be an array instead of a list
-            replicated_params, replicated_opt_state, replicated_batch_loss_train = train_step(
-                replicated_params,
-                replicated_opt_state,
+            key, subkey = split_key(key)
+            params, opt_state, batch_loss_train = train_step(
+                params,
+                opt_state,
                 batch_train.src,
                 batch_train.dst,
                 batch_train.mask_dec_1d,
@@ -114,19 +109,18 @@ def main():
                 batch_train.mask_dec,
                 batch_train.mask_dec_enc,
                 batch_train.labels,
-                dropout_key=subkeys,
+                dropout_key=subkey,
             )
 
             if process_index == 0:
                 # record loss and time
-                batch_loss_train = replicated_batch_loss_train[0].item()
+                batch_loss_train = batch_loss_train.item()
                 epoch_loss_train += batch_loss_train
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
                 # save params
                 if step % save_every_n_steps == 0:
-                    params = jax.tree_map(lambda x: x[0], replicated_params)
                     filename = f'{wandb.run.name}-{epoch}-{step}.dat'
                     save_params(params, filename)
 
@@ -136,8 +130,8 @@ def main():
                     total_loss_eval = 0.
 
                 for batch_eval in preprocessor_eval:
-                    replicated_batch_loss_eval = eval_step(
-                        replicated_params,
+                    batch_loss_eval = eval_step(
+                        params,
                         batch_eval.src,
                         batch_eval.dst,
                         batch_eval.mask_dec_1d,
@@ -147,7 +141,7 @@ def main():
                         batch_eval.labels,
                     )
                     if process_index == 0:
-                        batch_loss_eval = replicated_batch_loss_eval[0].item()
+                        batch_loss_eval = batch_loss_eval.item()
                         total_loss_eval += batch_loss_eval
 
                 if process_index == 0:
@@ -161,7 +155,6 @@ def main():
             wandb.log({'epoch loss': epoch_loss_train}, commit=False)
 
             # save params
-            params = jax.tree_map(lambda x: x[0], replicated_params)
             filename = f'{wandb.run.name}-{epoch}.dat'
             save_params(params, filename)
 
