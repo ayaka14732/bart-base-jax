@@ -7,7 +7,7 @@ import optax
 import time
 import wandb
 
-from lib.model import fwd_transformer
+from lib.model import fwd_transformer_merged
 from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.preprocessor.Preprocessor import Preprocessor
@@ -22,7 +22,7 @@ optimizer = None
 @jax.jit
 @jax.value_and_grad
 def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
-    outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
+    outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
     lm_head = params['lm_head']
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
@@ -42,7 +42,7 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
 
 @functools.partial(jax.pmap, axis_name='n_devices')
 def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
-    outputs = fwd_transformer(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
+    outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
     lm_head = params['lm_head']
     logits = outputs @ lm_head
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)

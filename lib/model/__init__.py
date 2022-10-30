@@ -6,3 +6,4 @@ from .fwd_attention import fwd_attention
 from .fwd_transformer_encoder import fwd_transformer_encoder
 from .fwd_transformer_decoder import fwd_transformer_decoder
 from .fwd_transformer import fwd_transformer
+from .fwd_transformer_merged import fwd_transformer_merged
