@@ -52,7 +52,7 @@ class Generator:
             model_flax.save_pretrained(tmpdirname)
             model_pt = BartForConditionalGeneration.from_pretrained(tmpdirname, from_flax=True)
 
-        model_pt.lm_head.weight.data = torch.from_numpy(onp.asarray(params['lm_head'].T))
+        model_pt.lm_head.weight.data = torch.from_numpy(onp.asarray(lm_head.T))
 
         self.model = model_pt
 
