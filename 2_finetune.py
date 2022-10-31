@@ -83,7 +83,7 @@ def main():
     params = load_params('params_merged.dat')
     params = jax.tree_map(np.asarray, params)
 
-    learning_rate = 5e-5
+    learning_rate = 1e-4
     # param_labels = {
     #     'encoder_embedding': 'freeze',
     #     'encoder_embed_positions': 'freeze',
