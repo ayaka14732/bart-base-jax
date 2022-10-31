@@ -14,7 +14,6 @@ from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 from lib.en_kfw_nmt.load_sentences import load_sentences
 
-
 pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
 
@@ -62,7 +61,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 12
+    n_epochs = 3
 
     batch_size_per_device_train = 80
     batch_size_per_device_dev = 80
