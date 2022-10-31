@@ -1,4 +1,5 @@
-import jax; jax.config.update('jax_platforms', 'cpu')
+import os; os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+import jax
 import jax.numpy as np
 from transformers import BartConfig, BartTokenizer, BertTokenizer
 from lib.Generator import Generator
@@ -6,7 +7,7 @@ from lib.Generator import Generator
 from lib.param_utils.load_params import load_params
 from lib.en_kfw_nmt.fwd_transformer_encoder_part import fwd_transformer_encoder_part
 
-params = load_params('params_merged.dat')
+params = load_params('howling-possession-14-3.dat')
 params = jax.tree_map(np.asarray, params)
 
 tokenizer_en = BartTokenizer.from_pretrained('facebook/bart-base')
@@ -17,8 +18,8 @@ generator = Generator({'embedding': params['decoder_embedding'], **params}, conf
 
 # generate
 
-sentences = ['Are you feeling well?', 'How are you?']
-inputs = tokenizer_en(sentences, return_tensors='jax', max_length=8, padding='max_length', truncation=True)
+sentences = ['Fire!', 'Are you feeling unwell?', 'How long have you waited?']
+inputs = tokenizer_en(sentences, return_tensors='jax', max_length=20, padding='max_length', truncation=True)
 src = inputs.input_ids.astype(np.uint16)
 mask_enc_1d = inputs.attention_mask.astype(np.bool_)
 mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]

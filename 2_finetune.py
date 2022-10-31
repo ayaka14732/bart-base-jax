@@ -64,11 +64,10 @@ def main():
 
     n_epochs = 12
 
-    batch_size_per_device_train = 24
-    batch_size_per_device_dev = 24
+    batch_size_per_device_train = 80
+    batch_size_per_device_dev = 80
 
     eval_every_n_steps = 1024
-    save_every_n_steps = 20480
 
     key = seed2key(seed=42 + process_index)
 
@@ -76,10 +75,10 @@ def main():
     sentences_dev = load_sentences(split='dev')
 
     key, subkey = split_key(key)
-    preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=3)
+    preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=2)
 
     key, subkey = split_key(key)
-    preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=3)
+    preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=2)
 
     key, subkey = split_key(key)
     params = load_params('params_merged.dat')
