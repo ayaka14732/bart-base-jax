@@ -17,8 +17,8 @@ generator = Generator({'embedding': params['decoder_embedding'], **params}, conf
 
 # generate
 
-sentences = ['Are you feeling well?', 'How are you?']
-inputs = tokenizer_en(sentences, return_tensors='jax', max_length=8, padding='max_length', truncation=True)
+sentences = ['Fire!', 'Are you feeling unwell?', 'How long have you waited?']
+inputs = tokenizer_en(sentences, return_tensors='jax', max_length=20, padding='max_length', truncation=True)
 src = inputs.input_ids.astype(np.uint16)
 mask_enc_1d = inputs.attention_mask.astype(np.bool_)
 mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]

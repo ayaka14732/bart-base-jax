@@ -1,7 +1,6 @@
-import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_force_host_platform_device_count=8'
-import jax; jax.config.update('jax_platforms', 'cpu'); jax.config.update('jax_disable_jit', True)
-
 import functools
+import jax
+import jax.numpy as np
 import jax_smi
 import optax
 import time
@@ -51,8 +50,8 @@ def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, l
 def main():
     # initialisation
 
-    # jax.distributed.initialize()
-    # jax_smi.initialise_tracking()
+    jax.distributed.initialize()
+    jax_smi.initialise_tracking()
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
@@ -69,7 +68,6 @@ def main():
     batch_size_per_device_dev = 80
 
     eval_every_n_steps = 1024
-    save_every_n_steps = 20480
 
     key = seed2key(seed=42 + process_index)
 
@@ -84,12 +82,33 @@ def main():
 
     key, subkey = split_key(key)
     params = load_params('params_merged.dat')
+    params = jax.tree_map(np.asarray, params)
+
+    learning_rate = 0.03
+    param_labels = {
+        'encoder_embedding': 'freeze',
+        'encoder_embed_positions': 'freeze',
+        'encoder_embed_layer_norm': 'freeze',
+        'encoder_layers': ['freeze'] * 2 + ['train'] * 8 + ['freeze'] * 2,
+        'decoder_embedding': 'freeze',
+        'decoder_embed_positions': 'freeze',
+        'decoder_embed_layer_norm': 'freeze',
+        'decoder_layers': 'freeze',
+        'lm_head': 'freeze',
+    }
+    optimizer_scheme = {
+        'train': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate),
+        ),
+        'freeze': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=learning_rate * 0.1),
+        ),
+    }
 
     global optimizer
-    optimizer = optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=0.03),
-    )
+    optimizer = optax.multi_transform(optimizer_scheme, param_labels)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
@@ -123,12 +142,6 @@ def main():
                 epoch_loss_train += batch_loss_train
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
-
-                # save params
-                if step % save_every_n_steps == 0:
-                    params = jax.tree_map(lambda x: x[0], replicated_params)
-                    filename = f'{wandb.run.name}-{epoch}-{step}.dat'
-                    save_params(params, filename)
 
             # eval
             if step % eval_every_n_steps == 0:
