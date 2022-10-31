@@ -141,11 +141,6 @@ def main():
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
-                # save params
-                if step % save_every_n_steps == 0:
-                    filename = f'{wandb.run.name}-{epoch}-{step}.dat'
-                    save_params(params, filename)
-
             # eval
             if step % eval_every_n_steps == 0:
                 if process_index == 0:
