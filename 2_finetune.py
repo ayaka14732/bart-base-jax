@@ -4,6 +4,8 @@ import jax
 import jax.numpy as np
 
 import functools
+import jax
+import jax.numpy as np
 import jax_smi
 import optax
 import time
@@ -50,8 +52,8 @@ def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, l
 def main():
     # initialisation
 
-    # jax.distributed.initialize()
-    # jax_smi.initialise_tracking()
+    jax.distributed.initialize()
+    jax_smi.initialise_tracking()
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
