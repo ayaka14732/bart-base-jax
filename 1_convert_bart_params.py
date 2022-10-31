@@ -14,7 +14,7 @@ params = {
     'encoder_embedding': params_en['embedding'],
     'encoder_embed_positions': params_en['encoder_embed_positions'],
     'encoder_embed_layer_norm': params_en['encoder_embed_layer_norm'],
-    'encoder_layers': params_en['encoder_layers'] + params_yue['encoder_layers'],
+    'encoder_layers': params_en['encoder_layers'],
     'decoder_embedding': params_yue['embedding'],
     'decoder_embed_positions': params_yue['decoder_embed_positions'],
     'decoder_embed_layer_norm': params_yue['decoder_embed_layer_norm'],

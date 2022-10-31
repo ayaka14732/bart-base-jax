@@ -6,7 +6,7 @@ from lib.Generator import Generator
 from lib.param_utils.load_params import load_params
 from lib.en_kfw_nmt.fwd_transformer_encoder_part import fwd_transformer_encoder_part
 
-params = load_params('frightful-clown-21-11.dat')
+params = load_params('frightful-wight-24-34.dat')
 params = jax.tree_map(np.asarray, params)
 
 tokenizer_en = BartTokenizer.from_pretrained('facebook/bart-base')
