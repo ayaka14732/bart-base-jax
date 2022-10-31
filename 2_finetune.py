@@ -1,3 +1,5 @@
+import os; os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+
 import jax
 import jax.numpy as np
 
