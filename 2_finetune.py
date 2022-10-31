@@ -61,7 +61,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 12
+    n_epochs = 100
 
     batch_size_per_device_train = 80
     batch_size_per_device_dev = 80
@@ -83,7 +83,7 @@ def main():
     params = load_params('params_merged.dat')
     params = jax.tree_map(np.asarray, params)
 
-    learning_rate = 1e-5
+    learning_rate = 5e-5
     # param_labels = {
     #     'encoder_embedding': 'freeze',
     #     'encoder_embed_positions': 'freeze',
