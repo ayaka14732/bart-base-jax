@@ -99,7 +99,7 @@ def main():
         #     optax.adaptive_grad_clip(0.1),
         #     optax.sgd(learning_rate=0.1),
         # ),
-        'train': optax.lamb(learning_rate=1e-3),
+        'train': optax.adabelief(learning_rate=1e-4),
         'freeze': optax.set_to_zero(),
     }
 
@@ -171,7 +171,7 @@ def main():
 
             # save params
             params = jax.tree_map(lambda x: x[0], replicated_params)
-            filename = f'{wandb.run.name}-{epoch}.dat'
+            filename = f'{wandb.run.name}.dat'
             save_params(params, filename)
 
 if __name__ == '__main__':
