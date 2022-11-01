@@ -62,7 +62,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 256
+    n_epochs = 1024
 
     batch_size_per_device_train = 5
     batch_size_per_device_dev = 80
@@ -142,7 +142,7 @@ def main():
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step == 0:
+            if step == 0 and False:  # disable eval
                 if process_index == 0:
                     total_loss_eval = 0.
 
