@@ -96,8 +96,8 @@ def main():
     }
     optimizer_scheme = {
         'train': optax.chain(
-            optax.adaptive_grad_clip(0.1, eps=0.001),
-            optax.sgd(learning_rate=0.1),
+            optax.adaptive_grad_clip(0.1),
+            optax.sgd(learning_rate=0.05),
         ),
         # 'train': optax.adamw(learning_rate=5e-4),
         'freeze': optax.set_to_zero(),
