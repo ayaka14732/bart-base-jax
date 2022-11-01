@@ -1,9 +1,11 @@
+import jax.nn as nn
 import jax.random as rand
 from jaxtyping import Array, Bool as B, Float as F, UInt16 as U16, PyTree, jaxtyped
 from typeguard import typechecked
 
 from ..model.dropout import dropout
 from ..model.fwd_layer_norm import fwd_layer_norm
+from ..model.fwd_linear import fwd_linear
 from ..model.fwd_embedding import fwd_embedding
 from ..model.fwd_transformer_encoder import fwd_transformer_encoder
 from ..random.wrapper import KeyArray
@@ -22,8 +24,11 @@ def fwd_transformer_encoder_part(
     encoder_embed_layer_norm: dict = params['encoder_embed_layer_norm']  # layer norm
     encoder_layers: list = params['encoder_layers']  # list of transformer encoder
 
+    proj0: dict = params['proj0']  # linear
+    proj1: dict = params['proj1']  # linear
+
     if dropout_key is not None:
-        num_keys = 2 + len(encoder_layers)
+        num_keys = 2 + 2 + len(encoder_layers)
         keys = iter(rand.split(dropout_key, num=num_keys))
 
     _, width_enc = src.shape
@@ -39,10 +44,25 @@ def fwd_transformer_encoder_part(
     if dropout_key is not None:
         src = dropout(next(keys), src)
 
-    for encoder_layer in encoder_layers:
+    for encoder_layer in encoder_layers[:-1]:
         if dropout_key is not None:
             src = fwd_transformer_encoder(encoder_layer, src, mask_enc, dropout_key=next(keys))
         else:
             src = fwd_transformer_encoder(encoder_layer, src, mask_enc)
+
+    src = fwd_linear(proj0, src)
+    src = nn.gelu(src)
+    if dropout_key is not None:
+        src = dropout(next(keys), src)
+
+    src = fwd_linear(proj1, src)
+    src = nn.gelu(src)
+    if dropout_key is not None:
+        src = dropout(next(keys), src)
+
+    if dropout_key is not None:
+        src = fwd_transformer_encoder(encoder_layers[-1], src, mask_enc, dropout_key=next(keys))
+    else:
+        src = fwd_transformer_encoder(encoder_layers[-1], src, mask_enc)
 
     return src
