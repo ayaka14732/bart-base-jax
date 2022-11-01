@@ -95,11 +95,11 @@ def main():
         'lm_head': 'freeze',
     }
     optimizer_scheme = {
-        'train': optax.chain(
-            optax.adaptive_grad_clip(0.1),
-            optax.sgd(learning_rate=0.15),
-        ),
-        # 'train': optax.adamw(learning_rate=5e-4),
+        # 'train': optax.chain(
+        #     optax.adaptive_grad_clip(0.1),
+        #     optax.sgd(learning_rate=0.1),
+        # ),
+        'train': optax.lamb(learning_rate=1e-3),
         'freeze': optax.set_to_zero(),
     }
 
