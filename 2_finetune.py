@@ -61,7 +61,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 100
+    n_epochs = 28
 
     batch_size_per_device_train = 80
     batch_size_per_device_dev = 80
@@ -97,11 +97,11 @@ def main():
         'lm_head': 'freeze',
     }
     optimizer_scheme = {
-        # 'train': optax.chain(
-        #     optax.adaptive_grad_clip(0.1, eps=0.001),
-        #     optax.sgd(learning_rate=learning_rate),
-        # ),
-        'train': optax.adamw(learning_rate=1e-5),
+        'train': optax.chain(
+            optax.adaptive_grad_clip(0.1, eps=0.001),
+            optax.sgd(learning_rate=0.01),
+        ),
+        # 'train': optax.adamw(learning_rate=1e-5),
         'freeze': optax.set_to_zero(),
     }
 
