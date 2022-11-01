@@ -63,7 +63,7 @@ def main():
 
     n_epochs = 32
 
-    batch_size_per_device_train = 4
+    batch_size_per_device_train = 5
     batch_size_per_device_dev = 80
 
     key = seed2key(seed=42 + process_index)
@@ -99,7 +99,7 @@ def main():
         #     optax.adaptive_grad_clip(0.1, eps=0.001),
         #     optax.sgd(learning_rate=0.01),
         # ),
-        'train': optax.adamw(learning_rate=1e-4),
+        'train': optax.adamw(learning_rate=5e-4),
         'freeze': optax.set_to_zero(),
     }
 

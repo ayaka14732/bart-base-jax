@@ -6,7 +6,7 @@ from lib.Generator import Generator
 from lib.param_utils.load_params import load_params
 from lib.en_kfw_nmt.fwd_transformer_encoder_part import fwd_transformer_encoder_part
 
-params = load_params('glad-hill-28-27.dat')
+params = load_params('proud-disco-29-31.dat')
 params = jax.tree_map(np.asarray, params)
 
 tokenizer_en = BartTokenizer.from_pretrained('facebook/bart-base')
@@ -25,6 +25,11 @@ sentences = [
     'You guys have no discipline, how can you be part of the disciplined services?',
     'Set A for takeaway.',
     'The sky is blue.',
+    'enter the spotlight',
+    'Save the children!',
+    'Do you know it\'s illegal to recruit triad members?',
+    'Today I\'d like to share some tips about making a cake.',
+    'This gathering only allows adults to join.',
 ]
 inputs = tokenizer_en(sentences, return_tensors='jax', max_length=20, padding='max_length', truncation=True)
 src = inputs.input_ids.astype(np.uint16)
