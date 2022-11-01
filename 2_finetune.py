@@ -63,10 +63,8 @@ def main():
 
     n_epochs = 28
 
-    batch_size_per_device_train = 80
+    batch_size_per_device_train = 24
     batch_size_per_device_dev = 80
-
-    eval_every_n_steps = 1024
 
     key = seed2key(seed=42 + process_index)
 
@@ -97,11 +95,11 @@ def main():
         'lm_head': 'freeze',
     }
     optimizer_scheme = {
-        'train': optax.chain(
-            optax.adaptive_grad_clip(0.1, eps=0.001),
-            optax.sgd(learning_rate=0.01),
-        ),
-        # 'train': optax.adamw(learning_rate=1e-5),
+        # 'train': optax.chain(
+        #     optax.adaptive_grad_clip(0.1, eps=0.001),
+        #     optax.sgd(learning_rate=0.01),
+        # ),
+        'train': optax.adamw(learning_rate=5e-5),
         'freeze': optax.set_to_zero(),
     }
 
@@ -142,7 +140,7 @@ def main():
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step % eval_every_n_steps == 0:
+            if step == 0:
                 if process_index == 0:
                     total_loss_eval = 0.
 
