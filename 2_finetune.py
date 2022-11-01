@@ -99,7 +99,7 @@ def main():
         #     optax.adaptive_grad_clip(0.1, eps=0.001),
         #     optax.sgd(learning_rate=0.01),
         # ),
-        'train': optax.adamw(learning_rate=1e-3),
+        'train': optax.adamw(learning_rate=7e-4),
         'freeze': optax.set_to_zero(),
     }
 
