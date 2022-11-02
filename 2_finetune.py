@@ -97,7 +97,7 @@ def main():
         #     optax.sgd(learning_rate=0.1),
         # ),
         # 'train': optax.adam(learning_rate=5e-4),
-        'train': optax.adamw(learning_rate=1e-3),
+        'train': optax.adamw(learning_rate=5e-4),
         'freeze': optax.set_to_zero(),
     }
 

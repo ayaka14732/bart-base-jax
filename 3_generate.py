@@ -46,7 +46,7 @@ mask_enc_1d = inputs.attention_mask.astype(np.bool_)
 mask_enc = np.einsum('bi,bj->bij', mask_enc_1d, mask_enc_1d)[:, None]
 
 encoder_last_hidden_output = fwd_transformer_encoder_part(params, src, mask_enc)
-generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=50)
+generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=128)
 
 decoded_sentences = tokenizer_yue.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
 print(decoded_sentences)
