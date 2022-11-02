@@ -18,9 +18,7 @@ from lib.en_kfw_nmt.load_sentences import load_sentences
 pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
 
-@jax.jit
-@jax.value_and_grad
-def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+def forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=None):
     outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
     lm_head = params['lm_head']
     logits = outputs @ lm_head
@@ -29,7 +27,7 @@ def train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_en
 
 @functools.partial(jax.pmap, axis_name='n_devices')
 def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
-    loss, grads = train_forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
+    loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
 
     grads = jax.lax.pmean(grads, axis_name='n_devices')
     loss = jax.lax.pmean(loss, axis_name='n_devices')
@@ -41,10 +39,8 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
 
 @functools.partial(jax.pmap, axis_name='n_devices')
 def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
-    outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc)
-    lm_head = params['lm_head']
-    logits = outputs @ lm_head
-    loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
+    loss = forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels)
+    loss = jax.lax.pmean(loss, axis_name='n_devices')
     return loss
 
 def main():
