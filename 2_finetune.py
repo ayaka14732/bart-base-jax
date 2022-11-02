@@ -58,7 +58,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 32
+    n_epochs = 256
 
     batch_size_per_device_train = 5
     batch_size_per_device_dev = 80
@@ -97,7 +97,7 @@ def main():
         #     optax.sgd(learning_rate=0.1),
         # ),
         # 'train': optax.adamw(learning_rate=5e-4),
-        'train': optax.adam(learning_rate=3e-4),
+        'train': optax.adam(learning_rate=4e-4),
         'freeze': optax.set_to_zero(),
     }
 
