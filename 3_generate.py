@@ -1,12 +1,13 @@
 import jax; jax.config.update('jax_platforms', 'cpu')
 import jax.numpy as np
 from transformers import BartConfig, BartTokenizer, BertTokenizer
-from lib.Generator import Generator
+import sys
 
+from lib.Generator import Generator
 from lib.param_utils.load_params import load_params
 from lib.en_kfw_nmt.fwd_transformer_encoder_part import fwd_transformer_encoder_part
 
-params = load_params('daily-water-42.dat')
+params = load_params(sys.argv[1])
 params = jax.tree_map(np.asarray, params)
 
 tokenizer_en = BartTokenizer.from_pretrained('facebook/bart-base')
