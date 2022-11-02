@@ -62,7 +62,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 1024
+    n_epochs = 24
 
     batch_size_per_device_train = 5
     batch_size_per_device_dev = 80
@@ -100,8 +100,8 @@ def main():
         #     optax.adaptive_grad_clip(0.1),
         #     optax.sgd(learning_rate=0.1),
         # ),
-        'train': optax.adam(learning_rate=5e-4),
-        # 'train': optax.adamw(learning_rate=5e-4),
+        # 'train': optax.adam(learning_rate=5e-4),
+        'train': optax.adamw(learning_rate=5e-4),
         'freeze': optax.set_to_zero(),
     }
 
@@ -142,7 +142,7 @@ def main():
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step == 0 and False:  # disable eval
+            if step == 0:  # disable eval
                 if process_index == 0:
                     total_loss_eval = 0.
 
