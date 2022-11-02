@@ -110,9 +110,9 @@ def main():
 
     for epoch in range(n_epochs):
         if process_index == 0:
-            epoch_loss_train = 0.
+            total_loss_train = 0.
 
-        for step, batch_train in enumerate(preprocessor_train):
+        for step_train, batch_train in enumerate(preprocessor_train):
             if process_index == 0:
                 start_time = time.time()
 
@@ -133,16 +133,16 @@ def main():
             if process_index == 0:
                 # record loss and time
                 batch_loss_train = replicated_batch_loss_train[0].item()
-                epoch_loss_train += batch_loss_train
+                total_loss_train += batch_loss_train
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step == 0:  # disable eval
+            if step_train == 0:
                 if process_index == 0:
                     total_loss_eval = 0.
 
-                for batch_eval in preprocessor_eval:
+                for step_eval, batch_eval in enumerate(preprocessor_eval):
                     replicated_batch_loss_eval = eval_step(
                         replicated_params,
                         batch_eval.src,
@@ -158,14 +158,13 @@ def main():
                         total_loss_eval += batch_loss_eval
 
                 if process_index == 0:
-                    wandb.log({'eval loss': total_loss_eval}, commit=False)
+                    wandb.log({'eval loss': total_loss_eval / step_eval}, commit=False)
 
             if process_index == 0:
                 wandb.log({}, commit=True)
 
         if process_index == 0:
-            epoch_loss_train /= step
-            wandb.log({'epoch loss': epoch_loss_train}, commit=False)
+            wandb.log({'epoch loss': total_loss_train / step_train}, commit=False)
 
             # save params
             params = jax.tree_map(lambda x: x[0], replicated_params)
