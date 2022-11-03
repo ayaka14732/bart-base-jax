@@ -58,7 +58,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 96
+    n_epochs = 48
 
     batch_size_per_device_train = 5
     batch_size_per_device_dev = 80
@@ -81,7 +81,7 @@ def main():
     global optimizer
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1),
-        optax.sgd(learning_rate=0.005),
+        optax.sgd(learning_rate=0.001),
     )
     opt_state = optimizer.init(params)
 
