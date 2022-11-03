@@ -19,13 +19,14 @@ generator = Generator({'embedding': params['decoder_embedding'], **params}, conf
 # generate
 
 sentences = [
-    'Fire!',
+    'anaemia',
+    'Get out!',
     'The sky is blue.',
-    'muscular dystrophy',
     'Save the children!',
     'enter the spotlight',
     'Are you feeling unwell?',
     'How long have you been waiting?',
+    'There are many bubbles in soda water.',
     'He feels deeply melancholic for his past.',
     'She prepared some mooncakes for me to eat.',
     'This gathering only allows adults to join.',
