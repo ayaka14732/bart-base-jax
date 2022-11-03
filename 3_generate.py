@@ -33,12 +33,13 @@ sentences = [
     "Do you know it's illegal to recruit triad members?",
     "Today I'd like to share some tips about making a cake.",
     'An annual fee is required if one wants to use the bank counter service.',
-    'Adults should protect children so as to avoid them being sexually abused.',
     'You guys have no discipline, how can you be part of the disciplined services?',
     'We need to offer young people drifting into crime an alternative set of values.',
     'A tiger is put with equal probability behind one of two doors, while treasure is put behind the other one.',
-    'Clerks working on a construction site are also construction site workers, engineers are also construction site workers.',
     'Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles.',
+    # sentences in the training dataset
+    'Adults should protect children so as to avoid them being sexually abused.',
+    'Clerks working on a construction site are also construction site workers, engineers are also construction site workers.',
     "Last night I was riding my bicycle on the road in my estate to return home. Both my front and back lights were all lit. A taxi opposite me didn't use its signal light, and when it was driving on my right front side it suddenly turned in toward my left. Luckily I was able to stop in time. Otherwise I would have been hit hard!",
 ]
 inputs = tokenizer_en(sentences, return_tensors='jax', padding=True)
