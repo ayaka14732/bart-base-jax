@@ -75,34 +75,14 @@ def main():
     preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=16)
 
     key, subkey = split_key(key)
-    params = load_params('params_merged.dat')
+    params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    param_labels = {
-        'encoder_embedding': 'freeze',
-        'encoder_embed_positions': 'freeze',
-        'encoder_embed_layer_norm': 'freeze',
-        'encoder_layers': 'freeze',
-        'proj0': 'train',
-        'proj1': 'train',
-        'decoder_embedding': 'freeze',
-        'decoder_embed_positions': 'freeze',
-        'decoder_embed_layer_norm': 'freeze',
-        'decoder_layers': 'freeze',
-        'lm_head': 'freeze',
-    }
-    optimizer_scheme = {
-        # 'train': optax.chain(
-        #     optax.adaptive_grad_clip(0.1),
-        #     optax.sgd(learning_rate=0.1),
-        # ),
-        'train': optax.adamw(learning_rate=3e-4),
-        # 'train': optax.adam(learning_rate=3e-4),
-        'freeze': optax.set_to_zero(),
-    }
-
     global optimizer
-    optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+    optimizer = optax.chain(
+        optax.adaptive_grad_clip(0.1),
+        optax.sgd(learning_rate=0.005),
+    )
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
