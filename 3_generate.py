@@ -36,6 +36,8 @@ sentences = [
     'You guys have no discipline, how can you be part of the disciplined services?',
     'We need to offer young people drifting into crime an alternative set of values.',
     'A tiger is put with equal probability behind one of two doors, while treasure is put behind the other one.',
+    "Recently he's been working so hard to get rid of his nerdy way of living, now he looks so different than before.",
+    'Running the marathon race in such a hot day, I almost collapsed as I arrived the destination.',
     'Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles.',
     # sentences in the training dataset
     'Adults should protect children so as to avoid them being sexually abused.',
@@ -51,4 +53,6 @@ encoder_last_hidden_output = fwd_transformer_encoder_part(params, src, mask_enc)
 generate_ids = generator.generate(encoder_last_hidden_output, mask_enc_1d, num_beams=5, max_length=128)
 
 decoded_sentences = tokenizer_yue.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-print(decoded_sentences)
+for sentence in decoded_sentences:
+    sentence = sentence.replace(' ', '')
+    print(sentence)
