@@ -49,6 +49,7 @@ def main():
     # initialisation
 
     # jax_smi.initialise_tracking()
+    jax.devices()
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
