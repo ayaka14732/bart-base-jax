@@ -1,3 +1,4 @@
+from lib.init_one_chip import init_one_chip; init_one_chip(process_num=0)
 import jax; jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 import functools
