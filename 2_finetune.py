@@ -7,6 +7,8 @@ import os
 import time
 import wandb
 
+jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
+
 from lib.dataset.load_cantonese import load_cantonese
 from lib.model import fwd_transformer_merged
 from lib.param_utils.load_params import load_params
