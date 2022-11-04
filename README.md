@@ -2,6 +2,14 @@
 
 This project is supported by Cloud TPUs from Google's [TPU Research Cloud](https://sites.research.google/trc/about/) (TRC).
 
+## Results
+
+| Model | BLEU |
+| :-: | :-: |
+| **BART** | **0.286** |
+| Baidu Translate | 0.168 |
+| Bing Translate | 0.155 |
+
 ## Develop
 
 ```sh
@@ -30,4 +38,10 @@ export ENDPOINT=...
 export LOCATION=...
 python translate_bing.py
 python compute_bleu.py results-bing.txt
+
+# Compare with Baidu Translator
+export BAIDU_APP_ID=...
+export BAIDU_APP_KEY=...
+python translate_baidu.py
+python compute_bleu.py results-baidu.txt --fix-hai
 ```
