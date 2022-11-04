@@ -1,4 +1,5 @@
-import jax; jax.config.update('jax_platforms', 'cpu')
+import jax; jax.config.update('jax_platforms', 'cpu'); jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
+
 import jax.numpy as np
 from transformers import BartConfig, BartTokenizer, BertTokenizer
 import sys

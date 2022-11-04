@@ -1,13 +1,12 @@
+import jax; jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
+
 import functools
-import jax
 import jax.numpy as np
 import jax_smi
 import optax
 import os
 import time
 import wandb
-
-jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 from lib.dataset.load_cantonese import load_cantonese
 from lib.model import fwd_transformer_merged
