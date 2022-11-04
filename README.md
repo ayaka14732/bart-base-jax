@@ -5,15 +5,15 @@ This project is supported by Cloud TPUs from Google's [TPU Research Cloud](https
 ## Results
 
 | Model | BLEU |
-| :-: | :-: |
-| **BART** | **0.286** |
+| :- | :-: |
+| **BART Model** | **0.286** |
 | Baidu Translate | 0.168 |
 | Bing Translate | 0.155 |
 
 ## Develop
 
 ```sh
-# Clone repo and datasets
+# Clone source code and datasets
 git clone https://github.com/ayaka14732/bart-base-jax.git
 git clone https://github.com/CanCLID/abc-cantonese-parallel-corpus.git
 git clone https://github.com/CanCLID/wordshk-parallel-corpus.git

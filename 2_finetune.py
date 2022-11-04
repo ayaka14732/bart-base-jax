@@ -80,7 +80,7 @@ def main():
     params = jax.tree_map(np.asarray, params)
 
     global optimizer
-    optimizer = optax.adamw(learning_rate=1e-5)
+    optimizer = optax.adamw(learning_rate=0.000014)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
