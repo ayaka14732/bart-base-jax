@@ -1,4 +1,4 @@
-from lib.init_one_chip import init_one_chip; init_one_chip(process_num=0)
+from lib.init_chip import init_four_chip; init_four_chip()
 import jax; jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 import functools
@@ -62,8 +62,8 @@ def main():
 
     n_epochs = 8
 
-    batch_size_per_device_train = 32
-    batch_size_per_device_dev = 640
+    batch_size_per_device_train = 8
+    batch_size_per_device_dev = 160
 
     key = seed2key(seed=42 + process_index)
 
@@ -81,7 +81,7 @@ def main():
     params = jax.tree_map(np.asarray, params)
 
     global optimizer
-    optimizer = optax.adamw(learning_rate=0.000014)
+    optimizer = optax.adamw(learning_rate=0.000009)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
