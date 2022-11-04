@@ -14,6 +14,3 @@ __pycache__
 /external-ips.txt
 .nfs*
 *.tmp
-
-/*en.txt
-/*yue.txt

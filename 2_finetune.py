@@ -7,13 +7,13 @@ import os
 import time
 import wandb
 
+from lib.dataset.load_cantonese import load_cantonese
 from lib.model import fwd_transformer_merged
 from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
-from lib.en_kfw_nmt.load_sentences import load_sentences
 
 pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
 optimizer = None
@@ -65,8 +65,8 @@ def main():
 
     key = seed2key(seed=42 + process_index)
 
-    sentences_train = load_sentences(split='train')
-    sentences_dev = load_sentences(split='dev')
+    sentences_train = load_cantonese(split='train')
+    sentences_dev = load_cantonese(split='dev')
 
     key, subkey = split_key(key)
     preprocessor_train = Preprocessor(sentences_train, key=subkey, batch_size_per_device=batch_size_per_device_train, n_workers=16)
