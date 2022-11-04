@@ -38,6 +38,9 @@ sentences = [
     'A tiger is put with equal probability behind one of two doors, while treasure is put behind the other one.',
     "Recently he's been working so hard to get rid of his nerdy way of living, now he looks so different than before.",
     'Running the marathon race in such a hot day, I almost collapsed as I arrived the destination.',
+    'He says flowery and pretty words, no one knows when his praise is real and when is not.',
+    'After 10 years of investigation, the police can finally figure out the man behind this murder case.',
+    "She has vowed for many times that she would slim down and thus never eat anything fatty, but she still has a fried chicken thigh every week. She can't keep her commitment.",
     'Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles.',
     # sentences in the training dataset
     'Adults should protect children so as to avoid them being sexually abused.',
