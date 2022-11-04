@@ -65,6 +65,8 @@ def main():
     batch_size_per_device_train = 8
     batch_size_per_device_dev = 160
 
+    eval_every_n_step = 1000
+
     key = seed2key(seed=3407 + process_index)
 
     sentences_train = load_cantonese(split='train')
@@ -80,7 +82,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.00001
+    base_learning_rate = 0.000015
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
@@ -121,6 +123,8 @@ def main():
     replicated_params = jax.device_put_replicated(params, local_devices)
     replicated_opt_state = jax.device_put_replicated(opt_state, local_devices)
 
+    step_total = 0
+
     for epoch in range(n_epochs):
         if process_index == 0:
             total_loss_train = 0.
@@ -151,7 +155,7 @@ def main():
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step_train == 0:
+            if step_total % eval_every_n_step == 0:
                 if process_index == 0:
                     total_loss_eval = 0.
 
@@ -173,8 +177,10 @@ def main():
                 if process_index == 0:
                     wandb.log({'eval loss': total_loss_eval / step_eval}, commit=False)
 
+            step_total += 1
+
             if process_index == 0:
-                wandb.log({}, commit=True)
+                wandb.log({'step': step_total}, commit=True)
 
         if process_index == 0:
             wandb.log({'epoch loss': total_loss_train / step_train}, commit=False)
