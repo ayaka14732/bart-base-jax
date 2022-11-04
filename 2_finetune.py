@@ -48,7 +48,7 @@ def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, l
 def main():
     # initialisation
 
-    # jax_smi.initialise_tracking()
+    jax_smi.initialise_tracking()
     jax.devices()
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
@@ -62,8 +62,8 @@ def main():
 
     n_epochs = 8
 
-    batch_size_per_device_train = 4
-    batch_size_per_device_dev = 80
+    batch_size_per_device_train = 32
+    batch_size_per_device_dev = 640
 
     key = seed2key(seed=42 + process_index)
 

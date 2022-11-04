@@ -6,7 +6,7 @@ This project is supported by Cloud TPUs from Google's [TPU Research Cloud](https
 
 | Model | BLEU |
 | :- | :-: |
-| **BART Model** | **0.286** |
+| **This Model** | **0.286** |
 | Baidu Translate | 0.168 |
 | Bing Translate | 0.155 |
 
@@ -22,11 +22,11 @@ git clone https://github.com/CanCLID/wordshk-parallel-corpus.git
 cd bart-base-jax
 git checkout en-kfw-nmt
 python 1_convert_bart_params.py
-python 2_finetune.py
+./startpod python 2_finetune.py
 
 # 2nd-stage fine-tuning
 git checkout en-kfw-nmt-2nd-stage
-python 2_finetune.py
+JAX_PLATFORMS='' python 2_finetune.py
 
 # Generate results
 python 3_predict.py
