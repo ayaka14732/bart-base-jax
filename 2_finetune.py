@@ -60,7 +60,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 8
+    n_epochs = 10
 
     batch_size_per_device_train = 8
     batch_size_per_device_dev = 160
@@ -82,7 +82,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.000015
+    base_learning_rate = 0.000017
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
@@ -92,7 +92,7 @@ def main():
     schedules = [
         optax.join_schedules((
             optax.linear_schedule(0, learning_rate, 50),
-            optax.linear_schedule(learning_rate, learning_rate * 0.01, 12238),
+            optax.linear_schedule(learning_rate, learning_rate * 0.05, 12238),
         ), (50,))
         for learning_rate in learning_rates
     ]
@@ -155,7 +155,7 @@ def main():
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
             # eval
-            if step_total % eval_every_n_step == 0:
+            if step_total % eval_every_n_step == 0 or step_train == 0:
                 if process_index == 0:
                     total_loss_eval = 0.
 
@@ -187,7 +187,7 @@ def main():
 
             # save params
             params = jax.tree_map(lambda x: x[0], replicated_params)
-            filename = f'{wandb.run.name}.dat'
+            filename = f'{wandb.run.name}-{epoch}.dat'
             save_params(params, filename + '.tmp')
             os.rename(filename + '.tmp', filename)
 
