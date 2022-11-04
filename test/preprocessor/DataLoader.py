@@ -2,14 +2,14 @@ import os; os.environ['XLA_FLAGS'] = os.environ.get('XLA_FLAGS', '') + ' --xla_f
 import jax; jax.config.update('jax_platforms', 'cpu')
 from pathlib import Path; import sys; sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
+from lib.dataset.load_cantonese import load_cantonese
 from lib.preprocessor.Preprocessor import Preprocessor
-from lib.en_kfw_nmt.load_sentences import load_sentences
 from lib.random.wrapper import seed2key
 
 if __name__ == '__main__':
     key = seed2key(42)
 
-    sentences = load_sentences(split='dev')
+    sentences = load_cantonese(split='dev')
 
     preprocessor = Preprocessor(sentences, key=key, batch_size_per_device=6, n_workers=8)
     for n_batches, batch in enumerate(preprocessor):
