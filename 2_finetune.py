@@ -51,14 +51,14 @@ def main():
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
-        wandb.init(project='en-kfw-nmt')
+        wandb.init(project='en-kfw-nmt-2nd-stage')
 
     # hyperparameters
 
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 52
+    n_epochs = 25
 
     batch_size_per_device_train = 4
     batch_size_per_device_dev = 80
