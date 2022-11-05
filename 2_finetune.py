@@ -83,8 +83,8 @@ def main():
     base_learning_rate = 0.000015
     learning_rates = (
         base_learning_rate * 0.35,
-        base_learning_rate * 0.5,
-        base_learning_rate * 0.9,
+        base_learning_rate * 0.65,
+        base_learning_rate * 0.95,
         base_learning_rate,
     )
     schedules = [
