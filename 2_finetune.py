@@ -135,6 +135,8 @@ def main():
             save_params(params, filename + '.tmp')
             os.rename(filename + '.tmp', filename)
 
+        del batch_train
+
         # eval
 
         if process_index == 0:
@@ -157,6 +159,8 @@ def main():
 
         if process_index == 0:
             wandb.log({'eval loss': total_loss_eval / tick_eval, 'epoch': epoch}, commit=True)
+
+        del batch_eval
 
 if __name__ == '__main__':
     main()
