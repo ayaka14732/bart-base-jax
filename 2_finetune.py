@@ -90,7 +90,7 @@ def main():
     schedules = [
         optax.join_schedules((
             optax.linear_schedule(0, learning_rate, 50),
-            optax.linear_schedule(learning_rate, learning_rate * 0.1, 12238),
+            optax.linear_schedule(learning_rate, learning_rate * 0.08, 12238),
         ), (50,))
         for learning_rate in learning_rates
     ]
