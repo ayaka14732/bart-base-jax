@@ -61,9 +61,9 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 12
+    n_epochs = 8
 
-    batch_size_per_device_train = 8
+    batch_size_per_device_train = 4
     batch_size_per_device_dev = 187
 
     key = seed2key(seed=42 + process_index)
