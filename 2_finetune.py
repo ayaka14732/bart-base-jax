@@ -82,7 +82,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.000005
+    base_learning_rate = 0.000008
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
