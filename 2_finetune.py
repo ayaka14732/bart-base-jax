@@ -82,7 +82,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.000020
+    base_learning_rate = 0.000015
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
@@ -92,7 +92,7 @@ def main():
     schedules = [
         optax.join_schedules((
             optax.linear_schedule(0, learning_rate, 50),
-            optax.linear_schedule(learning_rate, learning_rate * 0.05, 12238),
+            optax.linear_schedule(learning_rate, learning_rate * 0.1, 12238),
         ), (50,))
         for learning_rate in learning_rates
     ]
@@ -100,14 +100,14 @@ def main():
         'encoder_embedding': 's0',
         'encoder_embed_positions': 's0',
         'encoder_embed_layer_norm': 's0',
-        'encoder_layers': ['s0', 's0', 's1', 's1', 's2', 's2'],
-        'proj0': 's2',
-        'proj1': 's2',
+        'encoder_layers': ['s0', 's1', 's1', 's2', 's2', 's3'],
+        'proj0': 's3',
+        'proj1': 's3',
         'decoder_embedding': 's0',
         'decoder_embed_positions': 's0',
         'decoder_embed_layer_norm': 's0',
-        'decoder_layers': ['s0', 's0', 's1', 's1', 's2', 's2'],
-        'lm_head': 's2',
+        'decoder_layers': ['s0', 's1', 's1', 's2', 's2', 's3'],
+        'lm_head': 's3',
     }
     optimizer_scheme = {
         's0': optax.adamw(learning_rate=schedules[0]),
