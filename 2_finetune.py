@@ -80,8 +80,14 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
+    learning_rate = 0.000015
+    schedule = optax.join_schedules((
+        optax.linear_schedule(0, learning_rate, 50),
+        optax.linear_schedule(learning_rate, learning_rate * 0.01, 12238),
+    ), (50,))
+
     global optimizer
-    optimizer = optax.adamw(learning_rate=1e-5)
+    optimizer = optax.adamw(learning_rate=schedule)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
