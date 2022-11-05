@@ -82,7 +82,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.000030
+    base_learning_rate = 0.000017
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
@@ -92,7 +92,7 @@ def main():
     schedules = [
         optax.join_schedules((
             optax.linear_schedule(0, learning_rate, 50),
-            optax.linear_schedule(learning_rate, learning_rate * 0.1, 12238),
+            optax.linear_schedule(learning_rate, learning_rate * 0.05, 12238),
         ), (50,))
         for learning_rate in learning_rates
     ]
