@@ -80,42 +80,8 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.000015
-    learning_rates = (
-        base_learning_rate * 0.35,
-        base_learning_rate * 0.65,
-        base_learning_rate * 0.95,
-        base_learning_rate,
-    )
-    schedules = [
-        optax.join_schedules((
-            optax.linear_schedule(0, learning_rate, 50),
-            optax.linear_schedule(learning_rate, learning_rate * 0.08, 12238),
-        ), (50,))
-        for learning_rate in learning_rates
-    ]
-    param_labels = {
-        'encoder_embedding': 's0',
-        'encoder_embed_positions': 's0',
-        'encoder_embed_layer_norm': 's0',
-        'encoder_layers': ['s0', 's1', 's1', 's2', 's2', 's3'],
-        'proj0': 's3',
-        'proj1': 's3',
-        'decoder_embedding': 's0',
-        'decoder_embed_positions': 's0',
-        'decoder_embed_layer_norm': 's0',
-        'decoder_layers': ['s0', 's1', 's1', 's2', 's2', 's3'],
-        'lm_head': 's3',
-    }
-    optimizer_scheme = {
-        's0': optax.adamw(learning_rate=schedules[0]),
-        's1': optax.adamw(learning_rate=schedules[1]),
-        's2': optax.adamw(learning_rate=schedules[2]),
-        's3': optax.adamw(learning_rate=schedules[3]),
-    }
-
     global optimizer
-    optimizer = optax.multi_transform(optimizer_scheme, param_labels)
+    optimizer = optax.adamw(learning_rate=1e-5)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
