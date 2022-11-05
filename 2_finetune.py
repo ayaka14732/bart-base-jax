@@ -95,7 +95,7 @@ def main():
         if process_index == 0:
             total_loss_train = 0.
 
-        for tick_train, batch_train in enumerate(preprocessor_train):
+        for tick_train, batch_train in enumerate(preprocessor_train, 1):
             if process_index == 0:
                 start_time = time.time()
 
@@ -139,7 +139,7 @@ def main():
         if process_index == 0:
             total_loss_eval = 0.
 
-        for tick_eval, batch_eval in enumerate(preprocessor_eval):
+        for tick_eval, batch_eval in enumerate(preprocessor_eval, 1):
             replicated_batch_loss_eval = eval_tick(
                 replicated_params,
                 batch_eval.src,
@@ -155,7 +155,7 @@ def main():
                 total_loss_eval += batch_loss_eval
 
         if process_index == 0:
-            wandb.log({'eval loss': total_loss_eval / tick_eval}, commit=False)
+            wandb.log({'eval loss': total_loss_eval / tick_eval, 'epoch': epoch}, commit=True)
 
 if __name__ == '__main__':
     main()
