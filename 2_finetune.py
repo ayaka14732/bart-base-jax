@@ -1,4 +1,4 @@
-from lib.init_chip import init_four_chip; init_four_chip()
+# from lib.init_chip import init_four_chip; init_four_chip()
 import jax; jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 import functools
@@ -48,8 +48,9 @@ def eval_tick(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, l
 def main():
     # initialisation
 
+    jax.distributed.initialize()
     jax_smi.initialise_tracking()
-    jax.devices()
+    jax.devices()  # force TPU initialisation
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
