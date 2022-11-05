@@ -64,7 +64,7 @@ def main():
     n_epochs = 12
 
     batch_size_per_device_train = 8
-    batch_size_per_device_dev = 375
+    batch_size_per_device_dev = 187
 
     key = seed2key(seed=42 + process_index)
 
