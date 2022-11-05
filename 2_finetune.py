@@ -28,7 +28,7 @@ def forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, lab
     return loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
+def train_tick(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
     loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
 
     grads = jax.lax.pmean(grads, axis_name='n_devices')
@@ -40,7 +40,7 @@ def train_step(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def eval_step(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
+def eval_tick(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
     loss = forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels)
     loss = jax.lax.pmean(loss, axis_name='n_devices')
     return loss
@@ -53,7 +53,7 @@ def main():
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
-        wandb.init(project='en-kfw-nmt-2nd-stage')
+        wandb.init(project="en-kfw-nmt-2nd-stage'")
 
     # hyperparameters
 
@@ -64,8 +64,6 @@ def main():
 
     batch_size_per_device_train = 8
     batch_size_per_device_dev = 160
-
-    eval_every_n_step = 500
 
     key = seed2key(seed=3407 + process_index)
 
@@ -82,7 +80,7 @@ def main():
     params = load_params('serene-terrain-53.dat')
     params = jax.tree_map(np.asarray, params)
 
-    base_learning_rate = 0.00003
+    base_learning_rate = 0.000015
     learning_rates = (
         base_learning_rate * 0.35,
         base_learning_rate * 0.5,
@@ -123,18 +121,20 @@ def main():
     replicated_params = jax.device_put_replicated(params, local_devices)
     replicated_opt_state = jax.device_put_replicated(opt_state, local_devices)
 
-    step_total = 0
+    tick_total = 0
 
     for epoch in range(n_epochs):
+        # train
+
         if process_index == 0:
             total_loss_train = 0.
 
-        for step_train, batch_train in enumerate(preprocessor_train):
+        for tick_train, batch_train in enumerate(preprocessor_train):
             if process_index == 0:
                 start_time = time.time()
 
             key, subkey = split_key(key); subkeys = split_key(subkey, num=n_local_devices)  # force `subkeys` to be an array instead of a list
-            replicated_params, replicated_opt_state, replicated_batch_loss_train = train_step(
+            replicated_params, replicated_opt_state, replicated_batch_loss_train = train_tick(
                 replicated_params,
                 replicated_opt_state,
                 batch_train.src,
@@ -154,42 +154,42 @@ def main():
                 elapsed_time = time.time() - start_time
                 wandb.log({'train loss': batch_loss_train, 'time': elapsed_time}, commit=False)
 
-            # eval
-            if step_total % eval_every_n_step == 0 or step_train == 0:
-                if process_index == 0:
-                    total_loss_eval = 0.
-
-                for step_eval, batch_eval in enumerate(preprocessor_eval):
-                    replicated_batch_loss_eval = eval_step(
-                        replicated_params,
-                        batch_eval.src,
-                        batch_eval.dst,
-                        batch_eval.mask_dec_1d,
-                        batch_eval.mask_enc,
-                        batch_eval.mask_dec,
-                        batch_eval.mask_dec_enc,
-                        batch_eval.labels,
-                    )
-                    if process_index == 0:
-                        batch_loss_eval = replicated_batch_loss_eval[0].item()
-                        total_loss_eval += batch_loss_eval
-
-                if process_index == 0:
-                    wandb.log({'eval loss': total_loss_eval / step_eval}, commit=False)
-
-            step_total += 1
+            tick_total += 1
 
             if process_index == 0:
-                wandb.log({'step': step_total}, commit=True)
+                wandb.log({'tick': tick_total}, commit=True)
 
         if process_index == 0:
-            wandb.log({'epoch loss': total_loss_train / step_train}, commit=False)
+            wandb.log({'epoch loss': total_loss_train / tick_train}, commit=False)
 
             # save params
             params = jax.tree_map(lambda x: x[0], replicated_params)
             filename = f'{wandb.run.name}-{epoch}.dat'
             save_params(params, filename + '.tmp')
             os.rename(filename + '.tmp', filename)
+
+        # eval
+
+        if process_index == 0:
+            total_loss_eval = 0.
+
+        for tick_eval, batch_eval in enumerate(preprocessor_eval):
+            replicated_batch_loss_eval = eval_tick(
+                replicated_params,
+                batch_eval.src,
+                batch_eval.dst,
+                batch_eval.mask_dec_1d,
+                batch_eval.mask_enc,
+                batch_eval.mask_dec,
+                batch_eval.mask_dec_enc,
+                batch_eval.labels,
+            )
+            if process_index == 0:
+                batch_loss_eval = replicated_batch_loss_eval[0].item()
+                total_loss_eval += batch_loss_eval
+
+        if process_index == 0:
+            wandb.log({'eval loss': total_loss_eval / tick_eval}, commit=False)
 
 if __name__ == '__main__':
     main()
