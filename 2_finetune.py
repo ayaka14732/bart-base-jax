@@ -63,9 +63,9 @@ def main():
     n_epochs = 20
 
     batch_size_per_device_train = 8
-    batch_size_per_device_dev = 160
+    batch_size_per_device_dev = 240
 
-    key = seed2key(seed=3407 + process_index)
+    key = seed2key(seed=42 + process_index)
 
     sentences_train = load_cantonese(split='train')
     sentences_dev = load_cantonese(split='dev')
