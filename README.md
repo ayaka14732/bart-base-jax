@@ -21,9 +21,11 @@ This project is inspired by [hyunwoongko/transformer](https://github.com/hyunwoo
 
 ## News
 
-**2022-10-27:** I have published [Ayaka/bart-base-cantonese](https://huggingface.co/Ayaka/bart-base-cantonese), the Cantonese version of BART base. It is obtained by a second-stage pre-training on the [LIHKG dataset](https://github.com/ayaka14732/lihkg-scraper) based on the [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) model. See the [`cantonese-pretrain`](https://github.com/ayaka14732/bart-base-jax/tree/cantonese-pretrain) branch for details. [[Twitter]](https://twitter.com/ayaka14732/status/1585561115345375233)
+**2022-11-07:** [WIP] I am working on [ayaka14732/TransCan](https://github.com/ayaka14732/TransCan).
 
-**2022-10-08:** (On-going) I am fine-tuning [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) to develop a Mandarin-Taiwanese Hokkien translation model. See the [`twblg`](https://github.com/ayaka14732/bart-base-jax/tree/twblg) branch for details.
+**2022-10-27:** I published the [Cantonese BART](https://huggingface.co/Ayaka/bart-base-cantonese) model. It is obtained by a second-stage pre-training on the [LIHKG dataset](https://github.com/ayaka14732/lihkg-scraper) based on the [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) model. See [ayaka14732/bart-base-cantonese](https://github.com/ayaka14732/bart-base-cantonese) for details. [[Twitter]](https://twitter.com/ayaka14732/status/1585561115345375233)
+
+**2022-10-08:** [WIP] I am fine-tuning [fnlp/bart-base-chinese](https://huggingface.co/fnlp/bart-base-chinese) to develop a Mandarin-Taiwanese Hokkien translation model. See the [`twblg`](https://github.com/ayaka14732/bart-base-jax/tree/twblg) branch for details.
 
 **2022-09-27:** [Nixie](https://github.com/ztjhz) and I implemented [TrAVis](https://github.com/ayaka14732/TrAVis), a BERT attention visualiser that runs completely in-browser, based on this codebase. [[Twitter]](https://twitter.com/ayaka14732/status/1574627912162349056)
 
