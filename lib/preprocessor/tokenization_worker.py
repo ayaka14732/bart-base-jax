@@ -15,17 +15,17 @@ def tokenization_worker(sentences: list[tuple[str, str]]) -> np.ndarray:
         sentences_yue.append(sentence_yue)
 
     max_length = 128
-    src, mask_enc_1d = tokenizer(sentences_en, max_length=max_length, return_tensors='np', truncation=True, verbose=True, add_special_tokens=False, padding='max_length')
-    dst, mask_dec_1d = tokenizer(sentences_yue, max_length=max_length-1, return_tensors='np', truncation=True, verbose=True, add_special_tokens=False, padding='max_length')
+    src_inputs = tokenizer(sentences_en, max_length=max_length, return_tensors='np', truncation=True, verbose=True, add_special_tokens=False, padding='max_length')
+    dst_inputs = tokenizer(sentences_yue, max_length=max_length-1, return_tensors='np', truncation=True, verbose=True, add_special_tokens=False, padding='max_length')
     # TODO: add a reminder about these default settings:
     # - `return_tensors='np'`
     # - `add_prefix_space=True`
     # return type is a tuple, not a dict
     # return `np.uint16` and `np.bool_`
 
-    src = src.astype(np.uint16)
-    mask_enc_1d = mask_enc_1d.astype(np.uint16)
-    dst = dst.astype(np.uint16)
-    mask_dec_1d = mask_dec_1d.astype(np.uint16)
+    src = src_inputs.input_ids.astype(np.uint16)
+    mask_enc_1d = src_inputs.attention_mask.astype(np.bool_)
+    dst = dst_inputs.input_ids.astype(np.uint16)
+    mask_dec_1d = dst_inputs.attention_mask.astype(np.bool_)
 
     return src, mask_enc_1d, dst, mask_dec_1d

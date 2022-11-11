@@ -2,7 +2,6 @@
 import jax; jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
 
 import functools
-import jax.numpy as np
 import jax_smi
 import optax
 import os
@@ -16,7 +15,6 @@ from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
-pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
 forward_inner = None
 optimizer = None
 
