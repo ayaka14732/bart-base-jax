@@ -1,12 +1,13 @@
 import jax.numpy as np
 from transformers import MarianTokenizer
 
-tokenizer = None
+tokenizer_en = tokenizer_yue = None
 
 def tokenization_worker(sentences: list[tuple[str, str]]) -> np.ndarray:
-    global tokenizer
-    if tokenizer is None:
-        tokenizer = MarianTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-zh')
+    global tokenizer_en, tokenizer_yue
+    if tokenizer_en is None:
+        tokenizer_en = MarianTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-zh', source_spm='source.spm')
+        tokenizer_yue = MarianTokenizer.from_pretrained('Helsinki-NLP/opus-mt-en-zh', source_spm='target.spm')
 
     sentences_en = []
     sentences_yue = []
@@ -15,8 +16,8 @@ def tokenization_worker(sentences: list[tuple[str, str]]) -> np.ndarray:
         sentences_yue.append(sentence_yue)
 
     max_length = 100
-    src_inputs = tokenizer(sentences_en, max_length=max_length, return_tensors='np', truncation=True, verbose=True, padding='max_length')
-    dst_inputs = tokenizer(sentences_yue, max_length=max_length-1, return_tensors='np', truncation=True, verbose=True, padding='max_length')
+    src_inputs = tokenizer_en(sentences_en, max_length=max_length, return_tensors='np', truncation=True, verbose=True, padding='max_length')
+    dst_inputs = tokenizer_yue(sentences_yue, max_length=max_length-1, return_tensors='np', truncation=True, verbose=True, padding='max_length')
     # TODO: add a reminder about these default settings:
     # - `return_tensors='np'`
     # - `add_prefix_space=True`

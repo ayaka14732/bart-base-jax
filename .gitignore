@@ -14,3 +14,4 @@ __pycache__
 /external-ips.txt
 .nfs*
 *.tmp
+*.spm
