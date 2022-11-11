@@ -19,3 +19,4 @@ chex~=0.1.5
 numpyro~=0.10.1
 transformers==4.21.2
 sentencepiece
+sacremoses
