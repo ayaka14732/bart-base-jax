@@ -7,29 +7,35 @@ import jax_smi
 import optax
 import os
 import time
+from transformers import FlaxMarianMTModel
 import wandb
 
 from lib.dataset.load_cantonese import load_cantonese
-from lib.model import fwd_transformer_merged
-from lib.param_utils.load_params import load_params
 from lib.param_utils.save_params import save_params
 from lib.preprocessor.Preprocessor import Preprocessor
 from lib.random.wrapper import seed2key, split_key
 from lib.training.cross_entropy_loss import cross_entropy_loss
 
 pad_token_id = 1  # BartTokenizerWithoutOverflowEOS.from_pretrained('facebook/bart-base').pad_token_id
+forward_inner = None
 optimizer = None
 
-def forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=None):
-    outputs = fwd_transformer_merged(params, src, dst, mask_enc, mask_dec, mask_dec_enc, dropout_key=dropout_key)
-    lm_head = params['lm_head']
-    logits = outputs @ lm_head
+def forward(params, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key=None):
+    outputs = forward_inner(
+        input_ids=src,
+        attention_mask=mask_src_1d,
+        decoder_input_ids=dst,
+        decoder_attention_mask=mask_dec_1d,
+        params=params,
+        dropout_rng=dropout_key,
+    )
+    logits = outputs.logits
     loss = cross_entropy_loss(logits, labels, mask_dec_1d=mask_dec_1d)
     return loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def train_tick(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key):
-    loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels, dropout_key=dropout_key)
+def train_tick(params, opt_state, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key):
+    loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key=dropout_key)
 
     grads = jax.lax.pmean(grads, axis_name='n_devices')
     loss = jax.lax.pmean(loss, axis_name='n_devices')
@@ -40,8 +46,8 @@ def train_tick(params, opt_state, src, dst, mask_dec_1d, mask_enc, mask_dec, mas
     return params, opt_state, loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def eval_tick(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels):
-    loss = forward(params, src, dst, mask_dec_1d, mask_enc, mask_dec, mask_dec_enc, labels)
+def eval_tick(params, src, dst, mask_src_1d, mask_dec_1d, labels):
+    loss = forward(params, src, dst, mask_src_1d, mask_dec_1d, labels)
     loss = jax.lax.pmean(loss, axis_name='n_devices')
     return loss
 
@@ -54,7 +60,7 @@ def main():
     jax.config.update('jax_platforms', 'cpu')  # suppress TPU in subprocesses
     process_index = jax.process_index()
     if process_index == 0:
-        wandb.init(project="en-kfw-nmt-2nd-stage'")
+        wandb.init(project='en-yue-baseline')
 
     # hyperparameters
 
@@ -77,9 +83,10 @@ def main():
     key, subkey = split_key(key)
     preprocessor_eval = Preprocessor(sentences_dev, key=subkey, batch_size_per_device=batch_size_per_device_dev, n_workers=16)
 
-    key, subkey = split_key(key)
-    params = load_params('serene-terrain-53.dat')
-    params = jax.tree_map(np.asarray, params)
+    model = FlaxMarianMTModel.from_pretrained('Helsinki-NLP/opus-mt-en-zh')
+    global forward_inner
+    forward_inner = model.__call__
+    params = model.params
 
     global optimizer
     optimizer = optax.adamw(learning_rate=1e-5)
@@ -106,10 +113,8 @@ def main():
                 replicated_opt_state,
                 batch_train.src,
                 batch_train.dst,
+                batch_train.mask_src_1d,
                 batch_train.mask_dec_1d,
-                batch_train.mask_enc,
-                batch_train.mask_dec,
-                batch_train.mask_dec_enc,
                 batch_train.labels,
                 dropout_key=subkeys,
             )
@@ -147,10 +152,8 @@ def main():
                 replicated_params,
                 batch_eval.src,
                 batch_eval.dst,
+                batch_eval.mask_src_1d,
                 batch_eval.mask_dec_1d,
-                batch_eval.mask_enc,
-                batch_eval.mask_dec,
-                batch_eval.mask_dec_enc,
                 batch_eval.labels,
             )
             if process_index == 0:
