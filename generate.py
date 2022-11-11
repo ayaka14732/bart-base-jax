@@ -2,13 +2,11 @@ import jax; jax.config.update('jax_platforms', 'cpu'); jax.config.update('jax_de
 
 import jax.numpy as np
 import sys
-
-from lib.param_utils.load_params import load_params
-from lib.en_kfw_nmt.fwd_transformer_encoder_part import fwd_transformer_encoder_part
-
 from transformers import MarianTokenizer, FlaxMarianMTModel
 
-params = load_params('likely-dawn-4-0.dat') #sys.argv[1])
+from lib.param_utils.load_params import load_params
+
+params = load_params(sys.argv[1])
 params = jax.tree_map(np.asarray, params)
 
 model = FlaxMarianMTModel.from_pretrained('Helsinki-NLP/opus-mt-en-zh')

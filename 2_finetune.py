@@ -65,7 +65,7 @@ def main():
     local_devices = jax.local_devices()
     n_local_devices = jax.local_device_count()
 
-    n_epochs = 8
+    n_epochs = 10
 
     batch_size_per_device_train = 4
     batch_size_per_device_dev = 40
@@ -87,7 +87,7 @@ def main():
     params = model.params
 
     global optimizer
-    optimizer = optax.adamw(learning_rate=1e-5)
+    optimizer = optax.adamw(learning_rate=3e-5)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
