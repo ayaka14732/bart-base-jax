@@ -18,10 +18,10 @@ from lib.training.cross_entropy_loss import cross_entropy_loss
 forward_inner = None
 optimizer = None
 
-def forward(params, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key=None):
+def forward(params, src, dst, mask_enc_1d, mask_dec_1d, labels, dropout_key=None):
     outputs = forward_inner(
         input_ids=src,
-        attention_mask=mask_src_1d,
+        attention_mask=mask_enc_1d,
         decoder_input_ids=dst,
         decoder_attention_mask=mask_dec_1d,
         params=params,
@@ -32,8 +32,8 @@ def forward(params, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key=None
     return loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def train_tick(params, opt_state, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key):
-    loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_src_1d, mask_dec_1d, labels, dropout_key=dropout_key)
+def train_tick(params, opt_state, src, dst, mask_enc_1d, mask_dec_1d, labels, dropout_key):
+    loss, grads = jax.value_and_grad(forward)(params, src, dst, mask_enc_1d, mask_dec_1d, labels, dropout_key=dropout_key)
 
     grads = jax.lax.pmean(grads, axis_name='n_devices')
     loss = jax.lax.pmean(loss, axis_name='n_devices')
@@ -44,8 +44,8 @@ def train_tick(params, opt_state, src, dst, mask_src_1d, mask_dec_1d, labels, dr
     return params, opt_state, loss
 
 @functools.partial(jax.pmap, axis_name='n_devices')
-def eval_tick(params, src, dst, mask_src_1d, mask_dec_1d, labels):
-    loss = forward(params, src, dst, mask_src_1d, mask_dec_1d, labels)
+def eval_tick(params, src, dst, mask_enc_1d, mask_dec_1d, labels):
+    loss = forward(params, src, dst, mask_enc_1d, mask_dec_1d, labels)
     loss = jax.lax.pmean(loss, axis_name='n_devices')
     return loss
 
@@ -111,7 +111,7 @@ def main():
                 replicated_opt_state,
                 batch_train.src,
                 batch_train.dst,
-                batch_train.mask_src_1d,
+                batch_train.mask_enc_1d,
                 batch_train.mask_dec_1d,
                 batch_train.labels,
                 dropout_key=subkeys,
@@ -150,7 +150,7 @@ def main():
                 replicated_params,
                 batch_eval.src,
                 batch_eval.dst,
-                batch_eval.mask_src_1d,
+                batch_eval.mask_enc_1d,
                 batch_eval.mask_dec_1d,
                 batch_eval.labels,
             )
