@@ -14,7 +14,7 @@ def tokenization_worker(sentences: list[tuple[str, str]]) -> np.ndarray:
         sentences_en.append(sentence_en)
         sentences_yue.append(sentence_yue)
 
-    max_length = 128
+    max_length = 100
     src_inputs = tokenizer(sentences_en, max_length=max_length, return_tensors='np', truncation=True, verbose=True, padding='max_length')
     dst_inputs = tokenizer(sentences_yue, max_length=max_length-1, return_tensors='np', truncation=True, verbose=True, padding='max_length')
     # TODO: add a reminder about these default settings:
