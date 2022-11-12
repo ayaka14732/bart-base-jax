@@ -92,7 +92,7 @@ def main():
     model.params
 
     global optimizer
-    optimizer = optax.adamw(learning_rate=3e-5)
+    optimizer = optax.adamw(learning_rate=8e-6)
     opt_state = optimizer.init(params)
 
     replicated_params = jax.device_put_replicated(params, local_devices)
