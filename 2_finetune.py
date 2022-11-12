@@ -86,6 +86,11 @@ def main():
     forward_inner = model.__call__
     params = model.params
 
+    # remove model params
+    cpu_device = jax.devices('cpu')[0]
+    model.params = jax.tree_map(lambda a: jax.device_put(a, cpu_device), model.params)
+    model.params
+
     global optimizer
     optimizer = optax.adamw(learning_rate=3e-5)
     opt_state = optimizer.init(params)
